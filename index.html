@@ -885,7 +885,7 @@ function resetIcon() {
 
 // Fit one name on one row where possible; never below a finger-sized 48px.
 function cellSize(n) {
-  const room = app.clientWidth - 40 - (n - 1) * 8;   // main's horizontal padding, grid gap
+  const room = app.clientWidth - 40 - 12 - (n - 1) * 8;   // main's side padding, the grid's own, gaps
   return Math.max(48, Math.min(72, Math.floor(room / n)));
 }
 
