@@ -107,6 +107,7 @@
 
   /* write mode */
   #wtoggles { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  #wtoggles[hidden] { display: none; }   /* an author display rule beats the UA [hidden] style */
   #wtoggles label {
     font-size: 13px; color: var(--muted); cursor: pointer;
     display: flex; align-items: center; gap: 5px; user-select: none; white-space: nowrap;
@@ -783,6 +784,7 @@ function showWriteAnswer(name, timedOut) {
   };
 
   app.replaceChildren(
+    spriteEl(current, name.en || '', 'cue'),
     ...(timedOut ? [el('div', { id: 'verdict', className: 'no', textContent: S.timeUp })] : []),
     el('div', { id: 'answer' },
       el('div', { id: 'kana', style: 'font-size:34px', textContent: name.ja }),
