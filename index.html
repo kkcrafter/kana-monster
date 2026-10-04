@@ -155,6 +155,7 @@
     color: var(--guide); user-select: none; pointer-events: none;
   }
   #cells.noguide .guide { display: none; }
+  #cells.nonums .strokes text { display: none; }
   .guide svg { width: 100%; height: 100%; overflow: visible; }
   .strokes path { fill: none; stroke: var(--guide); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
   .strokes text { fill: var(--muted); font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; }
@@ -184,6 +185,7 @@
     <label><input type="checkbox" id="cue"> <span id="cue-label"></span></label>
     <label><input type="checkbox" id="autospeak"> <span id="speak-label"></span></label>
     <label id="guide-wrap"><input type="checkbox" id="guide"> <span id="guide-label"></span></label>
+    <label id="nums-wrap"><input type="checkbox" id="nums"> <span id="nums-label"></span></label>
   </div>
 </div>
 
@@ -289,6 +291,7 @@ const I18N = {
     check: '作答', skip: '不知道', next: '下一題 ⏎', play: '🔊 播放',
     correct: '正確', wrong: (a) => `錯誤：${a}`, skipped: '已略過',
     loadFail: (m) => `載入失敗：${m}`, retry: '重試',
+    numbers: '筆順數字',
     timeout: '連線逾時', noKana: '連續 8 張都沒有片假名名稱', imgFail: '圖片載入失敗',
     footer: '看片假名 → 唸出來 → 揭曉答案。名稱與圖片於執行時從 PokéAPI 取得，本專案不含任何圖片。',
     gens: ['紅・綠', '金・銀', '紅寶石・藍寶石', '鑽石・珍珠', '黑・白', 'X・Y', '太陽・月亮', '劍・盾', '朱・紫'],
@@ -312,6 +315,7 @@ const I18N = {
     check: 'Check', skip: "Don't know", next: 'Next ⏎', play: '🔊 Play',
     correct: 'Correct', wrong: (a) => `Wrong: ${a}`, skipped: 'Skipped',
     loadFail: (m) => `Failed to load: ${m}`, retry: 'Retry',
+    numbers: 'Stroke numbers',
     timeout: 'Request timed out', noKana: 'No katakana names in 8 tries', imgFail: 'Image failed to load',
     footer: 'Read the katakana, then reveal. Names and art are fetched from PokéAPI at runtime — this repo ships no images.',
     gens: ['Red & Blue', 'Gold & Silver', 'Ruby & Sapphire', 'Diamond & Pearl', 'Black & White', 'X & Y', 'Sun & Moon', 'Sword & Shield', 'Scarlet & Violet'],
@@ -335,6 +339,7 @@ const I18N = {
     check: '答える', skip: 'わからない', next: '次へ ⏎', play: '🔊 再生',
     correct: '正解', wrong: (a) => `不正解：${a}`, skipped: 'スキップ',
     loadFail: (m) => `読み込み失敗：${m}`, retry: '再試行',
+    numbers: '筆順の数字',
     timeout: '接続タイムアウト', noKana: '8回連続で片仮名の名前なし', imgFail: '画像を読み込めません',
     footer: '片仮名を読んでから答え合わせ。名前と画像は PokéAPI から実行時に取得し、このリポジトリに画像は含みません。',
     gens: ['赤・緑', '金・銀', 'ルビー・サファイア', 'ダイヤモンド・パール', 'ブラック・ホワイト', 'X・Y', 'サン・ムーン', 'ソード・シールド', 'スカーレット・バイオレット'],
@@ -360,7 +365,7 @@ const CUE_KEY = 'kanamon.cue', SPEAK_KEY = 'kanamon.autospeak';
 const GENS_KEY = 'kanamon.gens', LANG_KEY = 'kanamon.lang';
 const MODE_KEY = 'kanamon.mode', GUIDE_KEY = 'kanamon.guide';
 const SESSION_KEY = 'kanamon.session', COUNT_KEY = 'kanamon.count';
-const MINS_KEY = 'kanamon.mins', BEST_KEY = 'kanamon.best';
+const MINS_KEY = 'kanamon.mins', BEST_KEY = 'kanamon.best', NUMS_KEY = 'kanamon.strokenums';
 
 function load(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
@@ -524,6 +529,9 @@ const minsLabel = document.getElementById('mins-label');
 const guideBox = document.getElementById('guide');
 const guideWrap = document.getElementById('guide-wrap');
 const guideLabel = document.getElementById('guide-label');
+const numsBox = document.getElementById('nums');
+const numsWrap = document.getElementById('nums-wrap');
+const numsLabel = document.getElementById('nums-label');
 const footerEl = document.getElementById('footer');
 const cueLabel = document.getElementById('cue-label');
 const speakLabel = document.getElementById('speak-label');
@@ -543,6 +551,7 @@ let session = null;
 
 let mode = load(MODE_KEY, 'read') === 'write' ? 'write' : 'read';
 let showGuide = load(GUIDE_KEY, true);
+let showNums = load(NUMS_KEY, true);
 
 let asking = null;                       // the name currently being asked, for the cue toggle
 let shown = null;                        // the answer on screen, for re-rendering on language change
@@ -594,6 +603,13 @@ guideBox.addEventListener('change', () => {
   showGuide = guideBox.checked;
   save(GUIDE_KEY, showGuide);
   writing?.grid.classList.toggle('noguide', !showGuide);
+});
+
+numsBox.checked = showNums;
+numsBox.addEventListener('change', () => {
+  showNums = numsBox.checked;
+  save(NUMS_KEY, showNums);
+  writing?.grid.classList.toggle('nonums', !showNums);
 });
 
 // The name whose pronunciation Space should play, or null where hearing it would give the answer away.
@@ -656,7 +672,7 @@ function renderModes() {
     b.setAttribute('aria-pressed', m === mode);
     return b;
   }));
-  guideWrap.hidden = mode !== 'write';
+  guideWrap.hidden = numsWrap.hidden = mode !== 'write';
 }
 
 function setMode(m) {
@@ -691,6 +707,7 @@ function applyLang() {
   cueLabel.textContent = S.cue;
   speakLabel.textContent = S.autospeak;
   guideLabel.textContent = S.guide;
+  numsLabel.textContent = S.numbers;
   countLabel.textContent = S.countUnit;
   minsLabel.textContent = S.minsUnit;
   footerEl.replaceChildren(
@@ -878,6 +895,7 @@ function renderWrite() {
   asking = name;
   screen = 'write';
   grid.classList.toggle('noguide', !showGuide);
+  grid.classList.toggle('nonums', !showNums);
 
   app.replaceChildren(
     ...(showCue ? [spriteEl(current, '', 'cue')] : []),
