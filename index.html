@@ -162,25 +162,34 @@
   .strokes path { fill: none; stroke: var(--guide); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
   .strokes text { fill: var(--muted); font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; }
   footer a { color: inherit; }
-  .cell canvas { position: absolute; inset: 0; touch-action: none; cursor: crosshair; }
+  .cell canvas { position: absolute; inset: 0; touch-action: none; }
+  /* One transparent layer over the whole writing band takes all pointer input and carries the
+     pen-tip cursor. Chrome flickers a custom cursor whenever the element under it changes, so the
+     pointer must never be over the cells, the gaps or the numbers poking above them directly. */
+  #cells { position: relative; padding-top: 10px; padding-inline: 6px; margin-top: -10px; }
+  .ink-layer {
+    position: absolute; inset: 0; z-index: 2; touch-action: none;
+    /* PNG, not SVG: Chrome re-rasterises an SVG cursor whenever it re-applies it (e.g. when hover
+       moves to the next cell), and each re-rasterised copy counts as a new cursor, so it flickered. */
+    cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAATklEQVR42mNgIAf8///fAYj7odgBl6L+/79+/v9/7DAEg9hAMUyTQBJFWf//B3lAMIgNUeyAahrIFJgiGAaJIZtKikLirCbaMyQFDyEAANaCqsEW4zVlAAAAAElFTkSuQmCC") 5 5, crosshair;
+    cursor: -webkit-image-set(url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAATklEQVR42mNgIAf8///fAYj7odgBl6L+/79+/v9/7DAEg9hAMUyTQBJFWf//B3lAMIgNUeyAahrIFJgiGAaJIZtKikLirCbaMyQFDyEAANaCqsEW4zVlAAAAAElFTkSuQmCC") 1x, url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAApUlEQVR42mNgGPLg////PECsA8U8lBjkAcT7gfj3fwT4DRXzIMUgFiCe/58wAKlhIcZAhGEvX/z/v2D2//+1ZRAMYoPEkAwlxpsQcOzw//9Rgf//B3mgYpAYSA4BPPAZuB/uMmyGIRuKcOl+fLEJiQCQ13AZBsMgNYiI4sFmoA7cE6DwImQgSA0C6NDFQOp6meqRQpNkQ/WETZOsR/XCgWbF16ABAFKpe5crH6rcAAAAAElFTkSuQmCC") 2x) 5 5, crosshair;
+  }
   /* Below the cell, never over it: the top-right corner is where dakuten get written. */
   #cells { padding-bottom: 30px; row-gap: 38px; }
   #cells.done { padding-bottom: 0; row-gap: 8px; }
   .cell-clear {
     position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
-    z-index: 1;   /* above the hover strip (.cell::after), which would otherwise swallow the click */
+    z-index: 3;   /* above the ink layer */
     flex: none; width: 24px; height: 24px; padding: 0;
     display: flex; align-items: center; justify-content: center;
     border-radius: 50%; border: 1px solid var(--line);
     background: var(--card); color: var(--muted);
   }
   .cell-clear svg { width: 14px; height: 14px; }
-  /* The whole strip under a cell counts as hovering it, so the pointer can wander around the button. */
-  .cell::after { content: ''; position: absolute; left: -4px; right: -4px; top: 100%; height: 38px; }
   @media (hover: hover) {
     /* Leaving keeps the button visible and clickable for a moment before it fades. */
     .cell-clear { opacity: 0; visibility: hidden; transition: opacity .15s .4s, visibility 0s .55s; }
-    .cell:hover .cell-clear, .cell-clear:focus-visible { opacity: 1; visibility: visible; transition: opacity .12s, visibility 0s; }
+    .cell.hover .cell-clear, .cell-clear:hover, .cell-clear:focus-visible { opacity: 1; visibility: visible; transition: opacity .12s, visibility 0s; }
   }
   #cells.done .cell-clear { display: none !important; }   /* nothing left to fix once revealed */
 </style>
@@ -527,6 +536,7 @@ function strokeSvg({ p, n }) {
   };
   const svg = make('svg', { viewBox: '0 0 109 109', class: 'strokes' });
   for (const d of p) svg.append(make('path', { d }));
+  // KanjiVG's own label spots: the dakuten pair is staggered on purpose and pokes slightly above the cell.
   n.forEach(([x, y], i) => svg.append(Object.assign(make('text', { x, y }), { textContent: i + 1 })));
   return svg;
 }
@@ -894,32 +904,12 @@ function makeCell(ch, size, onInk) {
   ctx.lineWidth = 4;
   ctx.lineCap = ctx.lineJoin = 'round';
 
+  const wipe = el('button', { className: 'cell-clear', hidden: true, onclick: () => cell.clear() }, resetIcon());
+  // Strokes arrive from the grid's ink layer, in client coordinates.
   const at = (e) => {
     const r = canvas.getBoundingClientRect();
     return [e.clientX - r.left, e.clientY - r.top];
   };
-  let drawing = false;
-  const wipe = el('button', { className: 'cell-clear', hidden: true, onclick: () => cell.clear() }, resetIcon());
-  canvas.addEventListener('pointerdown', (e) => {
-    drawing = true;
-    wipe.hidden = false;
-    cell.inked = true;
-    onInk(cell);
-    canvas.setPointerCapture(e.pointerId);
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
-    ctx.beginPath();
-    ctx.moveTo(...at(e));
-    ctx.lineTo(...at(e));   // a tap alone should leave a dot
-    ctx.stroke();
-  });
-  canvas.addEventListener('pointermove', (e) => {
-    if (!drawing) return;
-    ctx.lineTo(...at(e));
-    ctx.stroke();
-  });
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
-    canvas.addEventListener(ev, () => { drawing = false; });
-  }
 
   const guide = el('div', { className: 'guide' });
   if (strokeCache[ch]) guide.append(strokeSvg(strokeCache[ch]));
@@ -933,7 +923,46 @@ function makeCell(ch, size, onInk) {
   cell.style.width = cell.style.height = `${size}px`;
   cell.inked = false;
   cell.clear = () => { ctx.clearRect(0, 0, size, size); wipe.hidden = true; cell.inked = false; };
+  cell.begin = (e) => {
+    wipe.hidden = false;
+    cell.inked = true;
+    onInk(cell);
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+    ctx.beginPath();
+    ctx.moveTo(...at(e));
+    ctx.lineTo(...at(e));   // a tap alone should leave a dot
+    ctx.stroke();
+  };
+  cell.extend = (e) => { ctx.lineTo(...at(e)); ctx.stroke(); };
   return cell;
+}
+
+// The single element under the pointer anywhere in the writing band: routes strokes to the cell
+// they start in, and does the hover the cells can no longer receive themselves.
+function inkLayer(cells) {
+  const layer = el('div', { className: 'ink-layer' });
+  const cellAt = (e, side, above, below) => cells.find((c) => {
+    const r = c.getBoundingClientRect();
+    return e.clientX >= r.left - side && e.clientX <= r.right + side
+      && e.clientY >= r.top - above && e.clientY <= r.bottom + below;
+  });
+  const hover = (cell) => { for (const c of cells) c.classList.toggle('hover', c === cell); };
+  let active = null;
+
+  layer.addEventListener('pointerdown', (e) => {
+    active = cellAt(e, 0, 0, 0);   // a stroke belongs to the cell it starts in
+    if (!active) return;
+    layer.setPointerCapture(e.pointerId);
+    active.begin(e);
+  });
+  layer.addEventListener('pointermove', (e) => {
+    if (active) active.extend(e);
+    // generous zone: the strip below holds the ↺ button, the strip above the dakuten numbers
+    hover(active || cellAt(e, 4, 10, 38));
+  });
+  for (const ev of ['pointerup', 'pointercancel']) layer.addEventListener(ev, () => { active = null; });
+  layer.addEventListener('pointerleave', () => { if (!active) hover(null); });
+  return layer;
 }
 
 function askWrite(name) {
@@ -942,7 +971,7 @@ function askWrite(name) {
   const order = [];   // cells by most recent stroke, latest last — what ⌘Z / Ctrl+Z walks back through
   const touched = (cell) => { const i = order.indexOf(cell); if (i >= 0) order.splice(i, 1); order.push(cell); };
   const cells = chars.map(ch => makeCell(ch, size, touched));
-  writing = { name, cells, order, grid: el('div', { id: 'cells' }, ...cells) };
+  writing = { name, cells, order, grid: el('div', { id: 'cells' }, ...cells, inkLayer(cells)) };
   renderWrite();
 }
 
