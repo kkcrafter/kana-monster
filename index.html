@@ -25,6 +25,7 @@
     }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }   /* author display rules otherwise beat the UA [hidden] style */
   body {
     margin: 0; padding: 24px 16px 48px;
     background: var(--bg); color: var(--fg);
@@ -105,27 +106,40 @@
   footer { font-size: 12px; color: var(--muted); max-width: 420px; text-align: center; }
   #tests { font: 13px/1.6 ui-monospace, monospace; max-width: 640px; white-space: pre-wrap; }
 
-  /* write mode */
-  #wtoggles { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-  #wtoggles[hidden] { display: none; }   /* an author display rule beats the UA [hidden] style */
-  #wtoggles label {
-    font-size: 13px; color: var(--muted); cursor: pointer;
-    display: flex; align-items: center; gap: 5px; user-select: none; white-space: nowrap;
+  /* sessions */
+  #row3 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #sessions, #modes { display: flex; gap: 4px; }
+  #row3 label {
+    font-size: 13px; color: var(--muted);
+    display: flex; align-items: center; gap: 5px; white-space: nowrap;
   }
-  #wtoggles input[type="checkbox"] {
-    width: auto; padding: 0; margin: 0; border: none; background: none;
-    accent-color: var(--accent); cursor: pointer;
-  }
-  #wtoggles input[type="number"] {
-    width: 52px; padding: 2px 6px; font-size: 13px; text-align: center;
+  #row3 input[type="number"] {
+    width: 56px; padding: 2px 6px; font-size: 13px; text-align: center;
     border-radius: 6px; border: 1px solid var(--line);
   }
-  #prompt { font-size: 30px; font-weight: 600; letter-spacing: .02em; text-align: center; }
-  #timer {
-    font: 600 15px/1 ui-monospace, monospace; color: var(--muted);
+  #sessionbar {
+    width: 100%; max-width: 420px; margin: -6px 0 -12px;
+    display: flex; justify-content: space-between;
+    font: 600 13px/1.4 ui-monospace, monospace; color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
-  #timer.low { color: var(--no); }
+  #sessionbar .low { color: var(--no); }
+  #intro { font-size: 17px; text-align: center; max-width: 300px; }
+  #summary-head { font-size: 28px; font-weight: 700; text-align: center; line-height: 1.2; }
+  #best { font-size: 13px; color: var(--muted); }
+  #best.new { color: var(--ok); font-weight: 600; }
+  #misses { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  #misses-title { font-size: 13px; color: var(--muted); }
+  .miss {
+    flex: none; width: 100%; padding: 8px 12px;
+    display: flex; justify-content: space-between; align-items: baseline;
+    background: transparent; color: var(--fg); font-size: 16px; text-align: left;
+    border: 1px solid var(--line); border-radius: 8px;
+  }
+  .miss span { color: var(--muted); font-size: 13px; }
+
+  /* write mode */
+  #prompt { font-size: 30px; font-weight: 600; letter-spacing: .02em; text-align: center; }
   #cells { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
   .cell {
     position: relative; flex: none;
@@ -152,19 +166,22 @@
 <div id="controls">
   <div id="gens"></div>
   <div id="row2">
-    <div id="modes"></div>
+    <div id="row3">
+      <div id="sessions"></div>
+      <label id="count-wrap"><input type="number" id="count" min="1" max="200"> <span id="count-label"></span></label>
+      <label id="mins-wrap"><input type="number" id="mins" min="1" max="60"> <span id="mins-label"></span></label>
+    </div>
     <div id="langs"></div>
   </div>
+  <div id="modes"></div>
   <div id="toggles">
     <label><input type="checkbox" id="cue"> <span id="cue-label"></span></label>
     <label><input type="checkbox" id="autospeak"> <span id="speak-label"></span></label>
-  </div>
-  <div id="wtoggles" hidden>
-    <label><input type="checkbox" id="usetimer"> <span id="timer-label"></span></label>
-    <label><input type="number" id="timersecs" min="5" max="600" step="5"> <span id="sec-label"></span></label>
-    <label><input type="checkbox" id="guide"> <span id="guide-label"></span></label>
+    <label id="guide-wrap"><input type="checkbox" id="guide"> <span id="guide-label"></span></label>
   </div>
 </div>
+
+<div id="sessionbar"></div>
 
 <main id="app">
   <div id="kana">…</div>
@@ -262,7 +279,14 @@ const I18N = {
     footer: '看片假名 → 唸出來 → 揭曉答案。名稱與圖片於執行時從 PokéAPI 取得，本專案不含任何圖片。',
     gens: ['紅・綠', '金・銀', '紅寶石・藍寶石', '鑽石・珍珠', '黑・白', 'X・Y', '太陽・月亮', '劍・盾', '朱・紫'],
     read: '閱讀', write: '書寫',
-    timer: '計時', sec: '秒', guide: '描紅',
+    guide: '描紅',
+    practice: '練習', challenge: '挑戰', countUnit: '題', minsUnit: '分鐘',
+    progress: (i, n) => `第 ${i} / ${n} 題`, score: (c) => `答對 ${c}`,
+    intro: (m, w) => `${m} 分鐘內，${w ? '寫出' : '認出'}越多片假名越好`, start: '開始挑戰',
+    best: (n) => `最佳紀錄：${n} 題`, noBest: '尚無紀錄', newBest: '新紀錄！',
+    practiceDone: (c, n) => `答對 ${c} / ${n} 題`, challengeDone: (c) => `答對 ${c} 題`,
+    attempted: (a) => `共作答 ${a} 題`, review: '需要複習', allCorrect: '全部答對！',
+    redo: '重做這組', newSet: '換新題目', again: '再挑戰一次',
     clear: '清除', done: '完成', timeUp: '時間到',
     gotIt: '寫對了', missed: '寫錯了', writeHint: '依讀音寫出片假名',
   },
@@ -278,7 +302,14 @@ const I18N = {
     footer: 'Read the katakana, then reveal. Names and art are fetched from PokéAPI at runtime — this repo ships no images.',
     gens: ['Red & Blue', 'Gold & Silver', 'Ruby & Sapphire', 'Diamond & Pearl', 'Black & White', 'X & Y', 'Sun & Moon', 'Sword & Shield', 'Scarlet & Violet'],
     read: 'Read', write: 'Write',
-    timer: 'Timer', sec: 'sec', guide: 'Tracing guide',
+    guide: 'Tracing guide',
+    practice: 'Practice', challenge: 'Challenge', countUnit: 'questions', minsUnit: 'min',
+    progress: (i, n) => `${i} / ${n}`, score: (c) => `${c} correct`,
+    intro: (m, w) => `${w ? 'Write' : 'Read'} as many katakana names as you can in ${m} min`, start: 'Start',
+    best: (n) => `Best: ${n}`, noBest: 'No record yet', newBest: 'New best!',
+    practiceDone: (c, n) => `${c} / ${n} correct`, challengeDone: (c) => `${c} correct`,
+    attempted: (a) => `${a} attempted`, review: 'To review', allCorrect: 'All correct!',
+    redo: 'Redo this set', newSet: 'New set', again: 'Try again',
     clear: 'Clear', done: 'Done', timeUp: "Time's up",
     gotIt: 'Got it', missed: 'Missed', writeHint: 'Write the katakana from the reading',
   },
@@ -294,7 +325,14 @@ const I18N = {
     footer: '片仮名を読んでから答え合わせ。名前と画像は PokéAPI から実行時に取得し、このリポジトリに画像は含みません。',
     gens: ['赤・緑', '金・銀', 'ルビー・サファイア', 'ダイヤモンド・パール', 'ブラック・ホワイト', 'X・Y', 'サン・ムーン', 'ソード・シールド', 'スカーレット・バイオレット'],
     read: '読み', write: '書き',
-    timer: 'タイマー', sec: '秒', guide: 'なぞり書き',
+    guide: 'なぞり書き',
+    practice: '練習', challenge: 'チャレンジ', countUnit: '問', minsUnit: '分',
+    progress: (i, n) => `${i} / ${n} 問`, score: (c) => `正解 ${c}`,
+    intro: (m, w) => `${m}分間で、できるだけ多く${w ? '書こう' : '読もう'}`, start: 'スタート',
+    best: (n) => `ベスト：${n}問`, noBest: '記録なし', newBest: '新記録！',
+    practiceDone: (c, n) => `${n}問中 ${c}問正解`, challengeDone: (c) => `${c}問正解`,
+    attempted: (a) => `${a}問に挑戦`, review: '復習しよう', allCorrect: '全問正解！',
+    redo: 'もう一度', newSet: '新しい問題', again: 'もう一度挑戦',
     clear: '消す', done: '完了', timeUp: '時間切れ',
     gotIt: '書けた', missed: '書けなかった', writeHint: '読みから片仮名を書く',
   },
@@ -306,8 +344,9 @@ const I18N = {
 const NAMES_KEY = 'kanamon.names.v2', PROGRESS_KEY = 'kanamon.progress';
 const CUE_KEY = 'kanamon.cue', SPEAK_KEY = 'kanamon.autospeak';
 const GENS_KEY = 'kanamon.gens', LANG_KEY = 'kanamon.lang';
-const MODE_KEY = 'kanamon.mode', TIMER_KEY = 'kanamon.timer';
-const SECS_KEY = 'kanamon.timersecs', GUIDE_KEY = 'kanamon.guide';
+const MODE_KEY = 'kanamon.mode', GUIDE_KEY = 'kanamon.guide';
+const SESSION_KEY = 'kanamon.session', COUNT_KEY = 'kanamon.count';
+const MINS_KEY = 'kanamon.mins', BEST_KEY = 'kanamon.best';
 
 function load(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
@@ -344,16 +383,17 @@ function buildDeck() {
   return ids;
 }
 
-// ponytail: rebuild the weighted pool each draw — 151 ids, nobody will notice
-function pick() {
+// Leitner-weighted draw, skipping ids already used this session (all of them once the deck runs out).
+// ponytail: rebuilds the weighted pool each draw — ~1000 ids at most, nobody will notice
+function pick(exclude = new Set()) {
+  let ids = IDS.filter(id => !exclude.has(id));
+  if (!ids.length) ids = IDS;
   const pool = [];
-  for (const id of IDS) {
+  for (const id of ids) {
     const w = WEIGHTS[(progress[id] || 1) - 1];
     for (let i = 0; i < w; i++) pool.push(id);
   }
-  let id;
-  do { id = pool[Math.random() * pool.length | 0]; } while (id === current && IDS.length > 1);
-  return id;
+  return pool[Math.random() * pool.length | 0];
 }
 
 const HAS_KATAKANA = /[゠-ヿ]/;
@@ -410,12 +450,16 @@ const speakBox = document.getElementById('autospeak');
 const genBar = document.getElementById('gens');
 const langBar = document.getElementById('langs');
 const modeBar = document.getElementById('modes');
-const wToggles = document.getElementById('wtoggles');
-const timerBox = document.getElementById('usetimer');
-const secsBox = document.getElementById('timersecs');
+const sessionsBar = document.getElementById('sessions');
+const sessionBar = document.getElementById('sessionbar');
+const countBox = document.getElementById('count');
+const minsBox = document.getElementById('mins');
+const countWrap = document.getElementById('count-wrap');
+const minsWrap = document.getElementById('mins-wrap');
+const countLabel = document.getElementById('count-label');
+const minsLabel = document.getElementById('mins-label');
 const guideBox = document.getElementById('guide');
-const timerLabel = document.getElementById('timer-label');
-const secLabel = document.getElementById('sec-label');
+const guideWrap = document.getElementById('guide-wrap');
 const guideLabel = document.getElementById('guide-label');
 const footerEl = document.getElementById('footer');
 const cueLabel = document.getElementById('cue-label');
@@ -426,16 +470,22 @@ let autoSpeak = load(SPEAK_KEY, false);  // 🔊 on the answer screen still work
 let lang = I18N[load(LANG_KEY, 'zh')] ? load(LANG_KEY, 'zh') : 'zh';
 let S = I18N[lang];
 
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v)) || lo));
+
+let sessionType = load(SESSION_KEY, 'practice') === 'challenge' ? 'challenge' : 'practice';
+let practiceCount = clamp(load(COUNT_KEY, 10), 1, 200);
+let challengeMins = clamp(load(MINS_KEY, 5), 1, 60);
+const best = load(BEST_KEY, {});          // `${mode}-${minutes}` -> most correct in one challenge
+let session = null;
+
 let mode = load(MODE_KEY, 'read') === 'write' ? 'write' : 'read';
-let useTimer = load(TIMER_KEY, true);
-let timerSecs = Math.min(600, Math.max(5, load(SECS_KEY, 60)));
 let showGuide = load(GUIDE_KEY, true);
 
 let asking = null;                       // the name currently being asked, for the cue toggle
 let shown = null;                        // the answer on screen, for re-rendering on language change
 let shownWrite = null;
 let writing = null;                      // {name, grid, cells} — the grid node is reused so strokes survive
-let screen = 'loading';                  // loading | question | answer | write | writeAnswer
+let screen = 'loading';                  // loading | question | answer | write | writeAnswer | intro | summary
 let revealedAt = 0;
 
 // Redraw whatever is on screen with current settings, without re-scoring or wiping strokes.
@@ -443,7 +493,9 @@ function rerender() {
   if (screen === 'question') ask(asking, app.querySelector('#app input')?.value ?? '');
   else if (screen === 'answer') showAnswer(shown.name, shown.answer, shown.correct);
   else if (screen === 'write') renderWrite();
-  else if (screen === 'writeAnswer') showWriteAnswer(shownWrite.name, shownWrite.timedOut);
+  else if (screen === 'writeAnswer') showWriteAnswer(shownWrite.name);
+  else if (screen === 'intro') renderIntro();
+  else if (screen === 'summary') renderSummary();
 }
 
 cueBox.checked = showCue;
@@ -460,19 +512,18 @@ speakBox.addEventListener('change', () => {
   if (!autoSpeak) speechSynthesis?.cancel();
 });
 
-timerBox.checked = useTimer;
-timerBox.addEventListener('change', () => {
-  useTimer = timerBox.checked;
-  save(TIMER_KEY, useTimer);
-  if (screen === 'write') startTimer(writing.timer, () => finishWrite(writing.name, true));
+countBox.value = practiceCount;
+countBox.addEventListener('change', () => {
+  countBox.value = practiceCount = clamp(countBox.value, 1, 200);
+  save(COUNT_KEY, practiceCount);
+  startSession();
 });
 
-secsBox.value = timerSecs;
-secsBox.addEventListener('change', () => {
-  timerSecs = Math.min(600, Math.max(5, Math.round(Number(secsBox.value) || 60)));
-  secsBox.value = timerSecs;
-  save(SECS_KEY, timerSecs);
-  if (screen === 'write') startTimer(writing.timer, () => finishWrite(writing.name, true));
+minsBox.value = challengeMins;
+minsBox.addEventListener('change', () => {
+  minsBox.value = challengeMins = clamp(minsBox.value, 1, 60);
+  save(MINS_KEY, challengeMins);
+  startSession();
 });
 
 guideBox.checked = showGuide;
@@ -507,7 +558,8 @@ document.addEventListener('keydown', (e) => {
   // this screen cannot also activate something on it — hence the guard window.
   if (performance.now() - revealedAt < 300) return;
   if (screen === 'answer') { e.preventDefault(); askNext(); }
-  else if (screen === 'write') { e.preventDefault(); finishWrite(writing.name, false); }
+  else if (screen === 'write') { e.preventDefault(); finishWrite(writing.name); }
+  else if (screen === 'intro') { e.preventDefault(); startChallenge(); }
 });
 
 function renderStats() {
@@ -541,7 +593,7 @@ function renderModes() {
     b.setAttribute('aria-pressed', m === mode);
     return b;
   }));
-  wToggles.hidden = mode !== 'write';
+  guideWrap.hidden = mode !== 'write';
 }
 
 function setMode(m) {
@@ -549,7 +601,25 @@ function setMode(m) {
   mode = m;
   save(MODE_KEY, mode);
   renderModes();
-  askNext();
+  startSession();
+}
+
+function renderSessions() {
+  sessionsBar.replaceChildren(...['practice', 'challenge'].map((t) => {
+    const b = el('button', { className: 'lang', textContent: S[t], onclick: () => setSessionType(t) });
+    b.setAttribute('aria-pressed', t === sessionType);
+    return b;
+  }));
+  countWrap.hidden = sessionType !== 'practice';
+  minsWrap.hidden = sessionType !== 'challenge';
+}
+
+function setSessionType(t) {
+  if (t === sessionType) return;
+  sessionType = t;
+  save(SESSION_KEY, sessionType);
+  renderSessions();
+  startSession();
 }
 
 function applyLang() {
@@ -557,14 +627,16 @@ function applyLang() {
   document.documentElement.lang = S.htmlLang;
   cueLabel.textContent = S.cue;
   speakLabel.textContent = S.autospeak;
-  timerLabel.textContent = S.timer;
-  secLabel.textContent = S.sec;
   guideLabel.textContent = S.guide;
+  countLabel.textContent = S.countUnit;
+  minsLabel.textContent = S.minsUnit;
   footerEl.textContent = S.footer;
   renderLangs();
+  renderSessions();
   renderModes();
   renderGens();
   renderStats();
+  renderSessionBar();
   rerender();
 }
 
@@ -583,7 +655,7 @@ function toggleGen(n) {
   IDS = buildDeck();
   renderGens();
   renderStats();
-  askNext();
+  startSession();
 }
 
 function el(tag, props = {}, ...kids) {
@@ -604,13 +676,16 @@ let askToken = 0;
 // Bounded, not recursive: a deck with no usable katakana names must surface, not spin.
 async function askNext() {
   const token = ++askToken;   // a newer askNext (e.g. the user switched generation) wins
-  stopTimer();
   asking = null;
   writing = null;
   screen = 'loading';
+  if (session.type === 'practice' && session.results.length >= session.queue.length) return endSession();
+  session.at = session.results.length + 1;   // the question number the bar shows until the next card
+  renderSessionBar();
   app.replaceChildren(el('div', { id: 'kana', textContent: '…' }));
   for (let tries = 0; tries < 8; tries++) {
-    const id = pick();
+    const slot = session.results.length;
+    const id = session.type === 'practice' ? session.queue[slot] : pick(session.seen);
     let name;
     try {
       name = await getName(id);
@@ -619,7 +694,14 @@ async function askNext() {
       return;
     }
     if (token !== askToken) return;
-    if (name.ja) { current = id; return mode === 'write' ? askWrite(name) : ask(name); }
+    if (name.ja) {
+      current = id;
+      session.seen?.add(id);
+      return mode === 'write' ? askWrite(name) : ask(name);
+    }
+    // No katakana name on record: swap in another id so a practice set keeps its size.
+    if (session.type === 'practice') session.queue[slot] = pick(new Set(session.queue));
+    else session.seen.add(id);
   }
   if (token === askToken) showError(S.noKana);
 }
@@ -703,46 +785,17 @@ function makeCell(ch, size) {
   return cell;
 }
 
-let timerId = null;
-
-function stopTimer() {
-  clearInterval(timerId);
-  timerId = null;
-}
-
-function startTimer(display, onEnd) {
-  stopTimer();
-  if (!useTimer) { display.hidden = true; return; }
-  display.hidden = false;
-  let left = timerSecs;
-  const tick = () => {
-    display.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
-    display.classList.toggle('low', left <= 10);
-  };
-  tick();
-  timerId = setInterval(() => {
-    left--;
-    tick();
-    if (left <= 0) { stopTimer(); onEnd(); }
-  }, 1000);
-}
-
 function askWrite(name) {
   const chars = [...name.ja].filter(isKana);
   const size = cellSize(chars.length);
   const cells = chars.map(ch => makeCell(ch, size));
-  writing = {
-    name, cells,
-    grid: el('div', { id: 'cells' }, ...cells),
-    timer: el('div', { id: 'timer' }),
-  };
+  writing = { name, cells, grid: el('div', { id: 'cells' }, ...cells) };
   renderWrite();
-  startTimer(writing.timer, () => finishWrite(name, true));
 }
 
-// Pure layout. The grid and timer nodes are reused, so strokes and the countdown survive a redraw.
+// Pure layout. The grid node is reused, so strokes survive a redraw.
 function renderWrite() {
-  const { name, cells, grid, timer } = writing;
+  const { name, cells, grid } = writing;
   asking = name;
   screen = 'write';
   grid.classList.toggle('noguide', !showGuide);
@@ -751,27 +804,25 @@ function renderWrite() {
     ...(showCue ? [spriteEl(current, '', 'cue')] : []),
     el('div', { id: 'prompt', textContent: toRomaji(name.ja) }),
     el('div', { id: 'hint', textContent: S.writeHint }),
-    timer,
     grid,
     el('div', { className: 'row' },
-      el('button', { textContent: S.done, onclick: () => finishWrite(name, false) }),
+      el('button', { textContent: S.done, onclick: () => finishWrite(name) }),
       el('button', { className: 'ghost', textContent: S.clear, onclick: () => cells.forEach(c => c.clear()) })
     )
   );
 }
 
-function finishWrite(name, timedOut) {
-  if (screen !== 'write') return;   // timer expiry and a click can race
-  stopTimer();
+function finishWrite(name) {
+  if (screen !== 'write') return;
   if (autoSpeak) speak(name.ja);
-  showWriteAnswer(name, timedOut);
+  showWriteAnswer(name);
 }
 
 // Self-assessed: handwriting has no automatic verdict, so the learner grades it.
-function showWriteAnswer(name, timedOut) {
+function showWriteAnswer(name) {
   asking = null;
   screen = 'writeAnswer';
-  shownWrite = { name, timedOut };
+  shownWrite = { name };
   revealedAt = performance.now();
   writing.grid.classList.remove('noguide');   // the faint glyph under your strokes is the comparison
 
@@ -780,12 +831,12 @@ function showWriteAnswer(name, timedOut) {
     progress[current] = correct ? Math.min(box + 1, 5) : 1;
     save(PROGRESS_KEY, progress);
     renderStats();
+    record(name, correct);
     askNext();
   };
 
   app.replaceChildren(
     spriteEl(current, name.en || '', 'cue'),
-    ...(timedOut ? [el('div', { id: 'verdict', className: 'no', textContent: S.timeUp })] : []),
     el('div', { id: 'answer' },
       el('div', { id: 'kana', style: 'font-size:34px', textContent: name.ja }),
       el('div', { id: 'romaji', textContent: toRomaji(name.ja) }),
@@ -809,6 +860,7 @@ function reveal(name, answer) {
   progress[current] = correct ? Math.min(box + 1, 5) : 1;
   save(PROGRESS_KEY, progress);
   renderStats();
+  record(name, correct, answer);
   if (autoSpeak) speak(name.ja);
   showAnswer(name, answer, correct);
 }
@@ -836,6 +888,148 @@ function showAnswer(name, answer, correct) {
       el('button', { className: 'speak', textContent: S.play, onclick: () => speak(name.ja) })
     )
   );
+}
+
+// ---------- sessions ----------
+// Practice: a fixed set of N, untimed, ending in a summary with redo / new set.
+// Challenge: one countdown over the whole run, counting how many you get right.
+
+let sessionTimerId = null;
+
+const bestKey = () => `${mode}-${challengeMins}`;
+
+function stopSessionTimer() {
+  clearInterval(sessionTimerId);
+  sessionTimerId = null;
+}
+
+function shuffle(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.random() * (i + 1) | 0;
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Drawn up front so "redo" can replay exactly the same questions.
+function drawSet(n) {
+  const taken = new Set();
+  while (taken.size < Math.min(n, IDS.length)) taken.add(pick(taken));
+  return [...taken];
+}
+
+function startSession(queue) {
+  stopSessionTimer();
+  askToken++;   // drop any card still loading for the previous session
+  if (sessionType === 'practice') {
+    session = { type: 'practice', queue: queue ?? drawSet(practiceCount), results: [] };
+    askNext();
+  } else {
+    session = { type: 'challenge', results: [], seen: new Set(), endsAt: 0 };
+    renderIntro();
+  }
+}
+
+function renderIntro() {
+  asking = null;
+  writing = null;
+  screen = 'intro';
+  renderSessionBar();
+  const top = best[bestKey()];
+  app.replaceChildren(
+    el('div', { id: 'intro', textContent: S.intro(challengeMins, mode === 'write') }),
+    el('div', { id: 'best', textContent: top == null ? S.noBest : S.best(top) }),
+    el('div', { className: 'row' }, el('button', { textContent: S.start, onclick: startChallenge }))
+  );
+}
+
+function startChallenge() {
+  if (screen !== 'intro') return;
+  session.endsAt = Date.now() + challengeMins * 60000;
+  // Wall-clock based, so a throttled background tab still ends on time.
+  sessionTimerId = setInterval(() => {
+    if (Date.now() >= session.endsAt) endSession();
+    else renderSessionBar();
+  }, 250);
+  askNext();
+}
+
+function record(name, correct, answer = '') {
+  session.results.push({ id: current, ja: name.ja, correct, answer });
+  renderSessionBar();
+}
+
+// Scores and saves once; renderSummary stays pure so a language switch can redraw it.
+function endSession() {
+  stopSessionTimer();
+  askToken++;
+  if (session.type === 'challenge') {
+    const correct = session.results.filter(r => r.correct).length;
+    const prev = best[bestKey()];
+    session.newBest = correct > 0 && (prev == null || correct > prev);
+    if (session.newBest) { best[bestKey()] = correct; save(BEST_KEY, best); }
+  }
+  renderSummary();
+}
+
+function renderSummary() {
+  asking = null;
+  writing = null;
+  screen = 'summary';
+  renderSessionBar();
+  const { type, results } = session;
+  const correct = results.filter(r => r.correct).length;
+  const misses = results.filter(r => !r.correct);
+  const top = best[bestKey()];
+
+  const head = type === 'practice'
+    ? [el('div', { id: 'summary-head', textContent: S.practiceDone(correct, results.length) })]
+    : [
+        el('div', { id: 'verdict', className: 'no', textContent: S.timeUp }),
+        el('div', { id: 'summary-head', textContent: S.challengeDone(correct) }),
+        el('div', { id: 'hint', textContent: S.attempted(results.length) }),
+        el('div', {
+          id: 'best', className: session.newBest ? 'new' : '',
+          textContent: session.newBest ? S.newBest : (top == null ? S.noBest : S.best(top)),
+        }),
+      ];
+
+  const list = misses.length
+    ? [el('div', { id: 'misses' },
+        el('div', { id: 'misses-title', textContent: S.review }),
+        ...misses.map(r => el('button', { className: 'miss', onclick: () => speak(r.ja) },
+          r.ja, el('span', { textContent: toRomaji(r.ja) })))
+      )]
+    : results.length ? [el('div', { id: 'verdict', className: 'ok', textContent: S.allCorrect })] : [];
+
+  const buttons = type === 'practice'
+    ? [
+        el('button', { textContent: S.newSet, onclick: () => startSession() }),
+        el('button', { className: 'ghost', textContent: S.redo, onclick: () => startSession(shuffle(session.queue)) }),
+      ]
+    : [el('button', { textContent: S.again, onclick: () => startSession() })];
+
+  app.replaceChildren(...head, ...list, el('div', { className: 'row' }, ...buttons));
+}
+
+function renderSessionBar() {
+  if (!session) return sessionBar.replaceChildren();
+  const score = el('span', { textContent: S.score(session.results.filter(r => r.correct).length) });
+  if (session.type === 'practice') {
+    const { results, queue } = session;
+    const n = screen === 'summary' ? results.length : session.at;
+    sessionBar.replaceChildren(el('span', { textContent: S.progress(n, queue.length) }), score);
+  } else {
+    const left = session.endsAt
+      ? Math.max(0, Math.ceil((session.endsAt - Date.now()) / 1000))
+      : challengeMins * 60;
+    const clock = el('span', {
+      textContent: `⏱ ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`,
+      className: session.endsAt && left <= 10 ? 'low' : '',
+    });
+    sessionBar.replaceChildren(clock, score);
+  }
 }
 
 // ---------- self-check: open with #test ----------
@@ -883,7 +1077,7 @@ function runTests() {
 
 if (location.hash === '#test') runTests();
 applyLang();
-askNext();
+startSession();
 </script>
 </body>
 </html>
