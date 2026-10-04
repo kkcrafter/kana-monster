@@ -15,6 +15,7 @@
     --no: #b3352b;
     --accent: #2b5eea;
     --ink: #d42a20;
+    --guide: #cdc8bd;   /* trace template: darker than grid lines, lighter than ink */
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -22,6 +23,7 @@
       --card: #202226; --line: #33363c;
       --ok: #4ecb8b; --no: #ff7a6e; --accent: #7fa0ff;
       --ink: #ff5248;
+      --guide: #4c5058;
     }
   }
   * { box-sizing: border-box; }
@@ -150,9 +152,13 @@
   }
   .cell .guide {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    color: var(--line); user-select: none; pointer-events: none;
+    color: var(--guide); user-select: none; pointer-events: none;
   }
   #cells.noguide .guide { display: none; }
+  .guide svg { width: 100%; height: 100%; overflow: visible; }
+  .strokes path { fill: none; stroke: var(--guide); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+  .strokes text { fill: var(--muted); font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; }
+  footer a { color: inherit; }
   .cell canvas { position: absolute; inset: 0; touch-action: none; cursor: crosshair; }
 </style>
 </head>
@@ -294,7 +300,7 @@ const I18N = {
     best: (n) => `最佳紀錄：${n} 題`, noBest: '尚無紀錄', newBest: '新紀錄！',
     practiceDone: (c, n) => `答對 ${c} / ${n} 題`, challengeDone: (c) => `答對 ${c} 題`,
     attempted: (a) => `共作答 ${a} 題`, review: '需要複習', allCorrect: '全部答對！',
-    redo: '重做這組', newSet: '換新題目', again: '再挑戰一次',
+    redo: '重做這組', newSet: '換新題目', again: '再挑戰一次', strokeCredit: '筆順資料：',
     clear: '清除', done: '完成', timeUp: '時間到',
     gotIt: '寫對了', missed: '寫錯了', writeHint: '依讀音寫出片假名',
   },
@@ -317,7 +323,7 @@ const I18N = {
     best: (n) => `Best: ${n}`, noBest: 'No record yet', newBest: 'New best!',
     practiceDone: (c, n) => `${c} / ${n} correct`, challengeDone: (c) => `${c} correct`,
     attempted: (a) => `${a} attempted`, review: 'To review', allCorrect: 'All correct!',
-    redo: 'Redo this set', newSet: 'New set', again: 'Try again',
+    redo: 'Redo this set', newSet: 'New set', again: 'Try again', strokeCredit: 'Stroke order:',
     clear: 'Clear', done: 'Done', timeUp: "Time's up",
     gotIt: 'Got it', missed: 'Missed', writeHint: 'Write the katakana from the reading',
   },
@@ -340,7 +346,7 @@ const I18N = {
     best: (n) => `ベスト：${n}問`, noBest: '記録なし', newBest: '新記録！',
     practiceDone: (c, n) => `${n}問中 ${c}問正解`, challengeDone: (c) => `${c}問正解`,
     attempted: (a) => `${a}問に挑戦`, review: '復習しよう', allCorrect: '全問正解！',
-    redo: 'もう一度', newSet: '新しい問題', again: 'もう一度挑戦',
+    redo: 'もう一度', newSet: '新しい問題', again: 'もう一度挑戦', strokeCredit: '筆順データ：',
     clear: '消す', done: '完了', timeUp: '時間切れ',
     gotIt: '書けた', missed: '書けなかった', writeHint: '読みから片仮名を書く',
   },
@@ -447,6 +453,55 @@ function speak(text) {
   u.lang = 'ja-JP';
   u.rate = 0.85;
   speechSynthesis.speak(u);
+}
+
+// ---------- stroke order ----------
+// Uses KanjiVG (https://kanjivg.tagaini.net) stroke data, CC BY-SA 3.0, fetched at runtime and
+// not bundled. Each guide starts as a plain glyph and upgrades to numbered strokes once loaded.
+
+const STROKES_KEY = 'kanamon.strokes.v1';
+const strokeCache = load(STROKES_KEY, {});   // char -> { p: [path d, …] in stroke order, n: [[x, y], …] label spots }
+const strokeRequests = {};
+
+const KVG_HOSTS = [
+  (hex) => `https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/${hex}.svg`,
+  (hex) => `https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/${hex}.svg`,
+];
+
+function getStrokes(ch) {
+  if (strokeCache[ch]) return Promise.resolve(strokeCache[ch]);
+  return strokeRequests[ch] ??= (async () => {
+    const hex = ch.codePointAt(0).toString(16).padStart(5, '0');
+    for (const host of KVG_HOSTS) {
+      try {
+        const res = await fetch(host(hex), { signal: AbortSignal.timeout(10000) });
+        if (!res.ok) continue;
+        const svg = await res.text();
+        const p = [...svg.matchAll(/<path[^>]*?id="kvg:[^"]*-s(\d+)"[^>]*?\sd="([^"]+)"/g)]
+          .sort((a, b) => a[1] - b[1]).map(m => m[2]);
+        const n = [...svg.matchAll(/matrix\(1 0 0 1 ([\d.]+) ([\d.]+)\)">(\d+)</g)]
+          .sort((a, b) => a[3] - b[3]).map(m => [+m[1], +m[2]]);
+        if (!p.length) return null;
+        strokeCache[ch] = { p, n };
+        save(STROKES_KEY, strokeCache);
+        return strokeCache[ch];
+      } catch {}
+    }
+    return null;   // keep the plain glyph
+  })();
+}
+
+function strokeSvg({ p, n }) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const make = (tag, attrs) => {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    return node;
+  };
+  const svg = make('svg', { viewBox: '0 0 109 109', class: 'strokes' });
+  for (const d of p) svg.append(make('path', { d }));
+  n.forEach(([x, y], i) => svg.append(Object.assign(make('text', { x, y }), { textContent: i + 1 })));
+  return svg;
 }
 
 // ---------- ui ----------
@@ -638,7 +693,11 @@ function applyLang() {
   guideLabel.textContent = S.guide;
   countLabel.textContent = S.countUnit;
   minsLabel.textContent = S.minsUnit;
-  footerEl.textContent = S.footer;
+  footerEl.replaceChildren(
+    S.footer, ' ', S.strokeCredit, ' ',
+    el('a', { href: 'https://kanjivg.tagaini.net', textContent: 'KanjiVG', target: '_blank', rel: 'noopener' }),
+    ' (CC BY-SA 3.0)'
+  );
   renderLangs();
   renderSessions();
   renderModes();
@@ -787,6 +846,7 @@ function makeCell(ch, size) {
 
   const guide = el('div', { className: 'guide', textContent: ch });
   guide.style.fontSize = `${Math.round(size * 0.66)}px`;
+  getStrokes(ch).then((s) => { if (s) guide.replaceChildren(strokeSvg(s)); });
   const cell = el('div', { className: 'cell' }, guide, canvas);
   cell.style.width = cell.style.height = `${size}px`;
   cell.clear = () => ctx.clearRect(0, 0, size, size);
