@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kana Monster</title>
+<style>
+  :root {
+    --bg: #fbfaf7;
+    --fg: #1a1a1a;
+    --muted: #6b6b6b;
+    --card: #ffffff;
+    --line: #e3e0d8;
+    --ok: #1c7d4d;
+    --no: #b3352b;
+    --accent: #2b5eea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16171a; --fg: #eceae5; --muted: #9a9892;
+      --card: #202226; --line: #33363c;
+      --ok: #4ecb8b; --no: #ff7a6e; --accent: #7fa0ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 48px;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+    min-height: 100vh;
+  }
+  header { width: 100%; max-width: 420px; display: flex; justify-content: space-between; align-items: baseline; }
+  h1 { font-size: 15px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin: 0; color: var(--muted); }
+  #stats { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #controls {
+    width: 100%; max-width: 420px; display: flex; flex-direction: column;
+    gap: 10px; margin-top: -8px;
+  }
+  #gens { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    flex: none; display: flex; align-items: baseline; gap: 5px;
+    padding: 4px 10px; font-size: 12px; border-radius: 999px;
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--line); cursor: pointer;
+  }
+  .chip b { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  #row2 { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  #langs { display: flex; gap: 4px; flex: none; }
+  .lang {
+    flex: none; padding: 2px 8px; font-size: 12px; border-radius: 6px;
+    background: transparent; color: var(--muted); border: 1px solid var(--line); cursor: pointer;
+  }
+  .lang[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  #toggles { display: flex; gap: 14px; }
+  #toggles label {
+    font-size: 13px; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; gap: 5px; user-select: none; white-space: nowrap;
+  }
+  #toggles input {
+    width: auto; padding: 0; margin: 0; border: none; background: none;
+    accent-color: var(--accent); cursor: pointer;
+  }
+  @media (max-width: 400px) { #toggles { flex-direction: column; gap: 4px; } }
+  main {
+    width: 100%; max-width: 420px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 14px;
+    padding: 28px 20px; display: flex; flex-direction: column;
+    align-items: center; gap: 18px; min-height: 380px; justify-content: center;
+  }
+  #kana { font-size: 44px; font-weight: 600; letter-spacing: .04em; text-align: center; line-height: 1.2; }
+  #hint { font-size: 13px; color: var(--muted); margin-top: -10px; }
+  input {
+    width: 100%; padding: 12px 14px; font-size: 18px; text-align: center;
+    background: var(--bg); color: var(--fg);
+    border: 1px solid var(--line); border-radius: 10px;
+    font-family: inherit;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row { display: flex; gap: 8px; width: 100%; }
+  button {
+    flex: 1; padding: 11px 14px; font-size: 15px; font-family: inherit;
+    background: var(--fg); color: var(--bg);
+    border: none; border-radius: 10px; cursor: pointer;
+  }
+  button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  button:hover { opacity: .88; }
+  #sprite { width: 180px; height: 180px; object-fit: contain; }
+  #sprite.cue { width: 120px; height: 120px; }
+  #sprite.noimg {
+    display: flex; align-items: center; justify-content: center;
+    border: 1px dashed var(--line); border-radius: 12px;
+    color: var(--muted); font-size: 13px;
+  }
+  #verdict { font-size: 15px; font-weight: 600; }
+  #verdict.ok { color: var(--ok); }
+  #verdict.no { color: var(--no); }
+  #answer { text-align: center; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  #romaji { font-size: 22px; font-weight: 600; letter-spacing: .02em; }
+  #en { font-size: 14px; color: var(--muted); }
+  .speak { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 14px; padding: 2px 6px; flex: none; }
+  footer { font-size: 12px; color: var(--muted); max-width: 420px; text-align: center; }
+  #tests { font: 13px/1.6 ui-monospace, monospace; max-width: 640px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Kana Monster</h1>
+  <div id="stats"></div>
+</header>
+
+<div id="controls">
+  <div id="gens"></div>
+  <div id="row2">
+    <div id="toggles">
+      <label><input type="checkbox" id="cue"> <span id="cue-label"></span></label>
+      <label><input type="checkbox" id="autospeak"> <span id="speak-label"></span></label>
+    </div>
+    <div id="langs"></div>
+  </div>
+</div>
+
+<main id="app">
+  <div id="kana">…</div>
+</main>
+
+<footer id="footer"></footer>
+
+<pre id="tests" hidden></pre>
+
+<script>
+// ---------- katakana → romaji ----------
+
+const DIGRAPH = {
+  'キャ':'kya','キュ':'kyu','キョ':'kyo','シャ':'sha','シュ':'shu','ショ':'sho',
+  'チャ':'cha','チュ':'chu','チョ':'cho','ニャ':'nya','ニュ':'nyu','ニョ':'nyo',
+  'ヒャ':'hya','ヒュ':'hyu','ヒョ':'hyo','ミャ':'mya','ミュ':'myu','ミョ':'myo',
+  'リャ':'rya','リュ':'ryu','リョ':'ryo','ギャ':'gya','ギュ':'gyu','ギョ':'gyo',
+  'ジャ':'ja','ジュ':'ju','ジョ':'jo','ビャ':'bya','ビュ':'byu','ビョ':'byo',
+  'ピャ':'pya','ピュ':'pyu','ピョ':'pyo',
+  'ファ':'fa','フィ':'fi','フェ':'fe','フォ':'fo','フュ':'fyu',
+  'ティ':'ti','ディ':'di','トゥ':'tu','ドゥ':'du','デュ':'dyu','テュ':'tyu',
+  'ウィ':'wi','ウェ':'we','ウォ':'wo',
+  'ヴァ':'va','ヴィ':'vi','ヴェ':'ve','ヴォ':'vo',
+  'シェ':'she','ジェ':'je','チェ':'che',
+  'ツァ':'tsa','ツィ':'tsi','ツェ':'tse','ツォ':'tso',
+  'クァ':'kwa','クィ':'kwi','クェ':'kwe','クォ':'kwo','グァ':'gwa',
+};
+
+const MONO = {
+  'ア':'a','イ':'i','ウ':'u','エ':'e','オ':'o',
+  'カ':'ka','キ':'ki','ク':'ku','ケ':'ke','コ':'ko',
+  'サ':'sa','シ':'shi','ス':'su','セ':'se','ソ':'so',
+  'タ':'ta','チ':'chi','ツ':'tsu','テ':'te','ト':'to',
+  'ナ':'na','ニ':'ni','ヌ':'nu','ネ':'ne','ノ':'no',
+  'ハ':'ha','ヒ':'hi','フ':'fu','ヘ':'he','ホ':'ho',
+  'マ':'ma','ミ':'mi','ム':'mu','メ':'me','モ':'mo',
+  'ヤ':'ya','ユ':'yu','ヨ':'yo',
+  'ラ':'ra','リ':'ri','ル':'ru','レ':'re','ロ':'ro',
+  'ワ':'wa','ヲ':'wo','ン':'n',
+  'ガ':'ga','ギ':'gi','グ':'gu','ゲ':'ge','ゴ':'go',
+  'ザ':'za','ジ':'ji','ズ':'zu','ゼ':'ze','ゾ':'zo',
+  'ダ':'da','ヂ':'ji','ヅ':'zu','デ':'de','ド':'do',
+  'バ':'ba','ビ':'bi','ブ':'bu','ベ':'be','ボ':'bo',
+  'パ':'pa','ピ':'pi','プ':'pu','ペ':'pe','ポ':'po',
+  'ヴ':'vu',
+};
+
+function toRomaji(kana) {
+  let out = '', geminate = false;
+  for (let i = 0; i < kana.length; ) {
+    const one = kana[i], two = kana.slice(i, i + 2);
+    if (one === 'ッ') { geminate = true; i++; continue; }
+    if (one === 'ー') {                       // long vowel: repeat the last one
+      const last = out.match(/[aiueo]$/);
+      if (last) out += last[0];
+      i++; continue;
+    }
+    let r, len;
+    if (DIGRAPH[two]) { r = DIGRAPH[two]; len = 2; }
+    else if (MONO[one]) { r = MONO[one]; len = 1; }
+    else { r = one; len = 1; }                // ponytail: pass through ・ and latin as-is
+    if (geminate) { r = r[0] + r; geminate = false; }
+    out += r; i += len;
+  }
+  return out;
+}
+
+// Forgiving comparison: accept kunrei/wapuro spellings and any long-vowel writing.
+function norm(s) {
+  return s.toLowerCase().replace(/[^a-z]/g, '')
+    .replace(/tch/g, 'cch')
+    .replace(/sy/g, 'sh').replace(/ty/g, 'ch').replace(/cy/g, 'ch').replace(/jy/g, 'j')
+    .replace(/si/g, 'shi').replace(/ti/g, 'chi').replace(/tu/g, 'tsu')
+    .replace(/(?<![sc])hu/g, 'fu')
+    .replace(/zi/g, 'ji').replace(/di/g, 'ji').replace(/du/g, 'zu')
+    .replace(/nn/g, 'n')
+    .replace(/([aiueo])\1+/g, '$1')
+    .replace(/ou/g, 'o');
+}
+
+const matches = (input, kana) => norm(input) === norm(toRomaji(kana));
+
+// ---------- interface strings ----------
+
+const I18N = {
+  zh: {
+    name: '中', htmlLang: 'zh-Hant',
+    cue: '題目出圖', autospeak: '自動發聲',
+    stats: (a, b) => `${a} / ${b} 熟`,
+    kanaCount: (n) => `${n} 個假名`,
+    check: '答', skip: '唔記得', next: '下一個 ⏎', play: '🔊 聽',
+    correct: '啱', wrong: (a) => `錯：${a}`, skipped: '跳過',
+    loadFail: (m) => `載入失敗：${m}`, retry: '重試',
+    timeout: '連線逾時', noKana: '連續 8 張都冇片假名名', imgFail: '圖片載入失敗',
+    footer: '片假名 → 讀出 → 揭曉。圖同名 runtime 由 PokéAPI 取，本 repo 不含任何圖像。',
+  },
+  en: {
+    name: 'EN', htmlLang: 'en',
+    cue: 'Show image first', autospeak: 'Auto audio',
+    stats: (a, b) => `${a} / ${b} learned`,
+    kanaCount: (n) => `${n} kana`,
+    check: 'Check', skip: "Don't know", next: 'Next ⏎', play: '🔊 Play',
+    correct: 'Correct', wrong: (a) => `Wrong: ${a}`, skipped: 'Skipped',
+    loadFail: (m) => `Failed to load: ${m}`, retry: 'Retry',
+    timeout: 'Request timed out', noKana: 'No katakana names in 8 tries', imgFail: 'Image failed to load',
+    footer: 'Read the katakana, then reveal. Names and art are fetched from PokéAPI at runtime — this repo ships no images.',
+  },
+  ja: {
+    name: '日', htmlLang: 'ja',
+    cue: '先に画像を出す', autospeak: '自動再生',
+    stats: (a, b) => `${a} / ${b} 習得`,
+    kanaCount: (n) => `${n}文字`,
+    check: '答える', skip: 'わからない', next: '次へ ⏎', play: '🔊 再生',
+    correct: '正解', wrong: (a) => `不正解：${a}`, skipped: 'スキップ',
+    loadFail: (m) => `読み込み失敗：${m}`, retry: '再試行',
+    timeout: '接続タイムアウト', noKana: '8回連続で片仮名の名前なし', imgFail: '画像を読み込めません',
+    footer: '片仮名を読んでから答え合わせ。名前と画像は PokéAPI から実行時に取得し、このリポジトリに画像は含みません。',
+  },
+};
+
+// ---------- storage ----------
+
+// v2: v1 cached entries under the wrong language code and poisoned the deck
+const NAMES_KEY = 'kanamon.names.v2', PROGRESS_KEY = 'kanamon.progress';
+const CUE_KEY = 'kanamon.cue', SPEAK_KEY = 'kanamon.autospeak';
+const GENS_KEY = 'kanamon.gens', LANG_KEY = 'kanamon.lang';
+
+function load(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch { return fallback; }
+}
+function save(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+}
+
+const names = load(NAMES_KEY, {});      // id -> {ja, en}
+const progress = load(PROGRESS_KEY, {}); // id -> Leitner box 1..5
+
+// ---------- deck ----------
+
+// National dex ranges, gen 1..9, named after each generation's paired titles
+const GENS = [
+  [1, 151, '赤・緑'],
+  [152, 251, '金・銀'],
+  [252, 386, 'ルビー・サファイア'],
+  [387, 493, 'ダイヤモンド・パール'],
+  [494, 649, 'ブラック・ホワイト'],
+  [650, 721, 'X・Y'],
+  [722, 809, 'サン・ムーン'],
+  [810, 905, 'ソード・シールド'],
+  [906, 1025, 'スカーレット・バイオレット'],
+];
+
+let gens = load(GENS_KEY, [1]).filter(g => g >= 1 && g <= GENS.length);
+if (!gens.length) gens = [1];
+
+let IDS = buildDeck();
+const WEIGHTS = [16, 8, 4, 2, 1];
+let current = null;
+
+function buildDeck() {
+  const ids = [];
+  for (const g of gens) {
+    const [from, to] = GENS[g - 1];
+    for (let id = from; id <= to; id++) ids.push(id);
+  }
+  return ids;
+}
+
+// ponytail: rebuild the weighted pool each draw — 151 ids, nobody will notice
+function pick() {
+  const pool = [];
+  for (const id of IDS) {
+    const w = WEIGHTS[(progress[id] || 1) - 1];
+    for (let i = 0; i < w; i++) pool.push(id);
+  }
+  let id;
+  do { id = pool[Math.random() * pool.length | 0]; } while (id === current && IDS.length > 1);
+  return id;
+}
+
+const HAS_KATAKANA = /[゠-ヿ]/;
+
+async function getName(id) {
+  if (names[id]) return names[id];
+  const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`, {
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`PokéAPI ${res.status}`);
+  const data = await res.json();
+  const lang = (code) => data.names.find(n => n.language.name === code)?.name;
+  const ja = lang('ja-Hrkt') || lang('ja');   // the API has used both codes over time
+  // store null, not undefined, so the cache hit still short-circuits
+  names[id] = { ja: HAS_KATAKANA.test(ja || '') ? ja : null, en: lang('en') || null };
+  save(NAMES_KEY, names);
+  return names[id];
+}
+
+// Same files, different hosts — raw.githubusercontent.com is blocked on some networks.
+const SPRITE_HOSTS = [
+  (id) => `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/${id}.png`,
+  (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
+  (id) => `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/${id}.png`,
+];
+
+function spriteEl(id, alt, className = '') {
+  let attempt = 0;
+  const img = el('img', { id: 'sprite', className, src: SPRITE_HOSTS[0](id), alt });
+  img.onerror = () => {
+    if (++attempt < SPRITE_HOSTS.length) { img.src = SPRITE_HOSTS[attempt](id); return; }
+    img.replaceWith(el('div', { id: 'sprite', className: `${className} noimg`.trim(), textContent: S.imgFail }));
+  };
+  return img;
+}
+
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP';
+  u.rate = 0.85;
+  speechSynthesis.speak(u);
+}
+
+// ---------- ui ----------
+
+const app = document.getElementById('app');
+const statsEl = document.getElementById('stats');
+const cueBox = document.getElementById('cue');
+const speakBox = document.getElementById('autospeak');
+const genBar = document.getElementById('gens');
+const langBar = document.getElementById('langs');
+const footerEl = document.getElementById('footer');
+const cueLabel = document.getElementById('cue-label');
+const speakLabel = document.getElementById('speak-label');
+
+let showCue = load(CUE_KEY, false);      // image as cue (easy) vs reveal-only (real reading practice)
+let autoSpeak = load(SPEAK_KEY, false);  // 🔊 on the answer screen still works when this is off
+let lang = I18N[load(LANG_KEY, 'zh')] ? load(LANG_KEY, 'zh') : 'zh';
+let S = I18N[lang];
+
+let asking = null;                       // the name currently being asked, for the cue toggle
+let shown = null;                        // the answer on screen, for re-rendering on language change
+let screen = 'loading';                  // loading | question | answer
+let revealedAt = 0;
+
+cueBox.checked = showCue;
+cueBox.addEventListener('change', () => {
+  showCue = cueBox.checked;
+  save(CUE_KEY, showCue);
+  if (asking) ask(asking, app.querySelector('input')?.value ?? '');
+});
+
+speakBox.checked = autoSpeak;
+speakBox.addEventListener('change', () => {
+  autoSpeak = speakBox.checked;
+  save(SPEAK_KEY, autoSpeak);
+  if (!autoSpeak) speechSynthesis?.cancel();
+});
+
+// Enter on the answer screen. Handled here rather than by focusing the button, so the
+// keypress that submitted the answer cannot activate it — hence the guard window.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || screen !== 'answer') return;
+  if (performance.now() - revealedAt < 300) return;   // swallow the keypress that opened this screen
+  e.preventDefault();
+  askNext();
+});
+
+function renderStats() {
+  const learned = IDS.filter(id => (progress[id] || 1) >= 4).length;
+  statsEl.textContent = S.stats(learned, IDS.length);
+}
+
+function renderGens() {
+  genBar.replaceChildren(...GENS.map(([, , title], i) => {
+    const n = i + 1;
+    const chip = el('button', { className: 'chip', onclick: () => toggleGen(n) },
+      el('b', { textContent: n }),
+      el('span', { textContent: title })
+    );
+    chip.setAttribute('aria-pressed', gens.includes(n));
+    return chip;
+  }));
+}
+
+function renderLangs() {
+  langBar.replaceChildren(...Object.entries(I18N).map(([code, strings]) => {
+    const b = el('button', { className: 'lang', textContent: strings.name, onclick: () => setLang(code) });
+    b.setAttribute('aria-pressed', code === lang);
+    return b;
+  }));
+}
+
+function applyLang() {
+  S = I18N[lang];
+  document.documentElement.lang = S.htmlLang;
+  cueLabel.textContent = S.cue;
+  speakLabel.textContent = S.autospeak;
+  footerEl.textContent = S.footer;
+  renderLangs();
+  renderStats();
+  if (screen === 'question') ask(asking, app.querySelector('input')?.value ?? '');
+  else if (screen === 'answer') showAnswer(shown.name, shown.answer, shown.correct);
+}
+
+function setLang(code) {
+  if (code === lang) return;
+  lang = code;
+  save(LANG_KEY, lang);
+  applyLang();
+}
+
+function toggleGen(n) {
+  const next = gens.includes(n) ? gens.filter(g => g !== n) : [...gens, n].sort((a, b) => a - b);
+  if (!next.length) return;   // keep at least one generation in the deck
+  gens = next;
+  save(GENS_KEY, gens);
+  IDS = buildDeck();
+  renderGens();
+  renderStats();
+  askNext();
+}
+
+function el(tag, props = {}, ...kids) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...kids);
+  return node;
+}
+
+function showError(message) {
+  app.replaceChildren(
+    el('div', { style: 'text-align:center;color:var(--no)' }, S.loadFail(message)),
+    el('div', { className: 'row' }, el('button', { textContent: S.retry, onclick: askNext }))
+  );
+}
+
+let askToken = 0;
+
+// Bounded, not recursive: a deck with no usable katakana names must surface, not spin.
+async function askNext() {
+  const token = ++askToken;   // a newer askNext (e.g. the user switched generation) wins
+  asking = null;
+  screen = 'loading';
+  app.replaceChildren(el('div', { id: 'kana', textContent: '…' }));
+  for (let tries = 0; tries < 8; tries++) {
+    const id = pick();
+    let name;
+    try {
+      name = await getName(id);
+    } catch (err) {
+      if (token === askToken) showError(err.name === 'TimeoutError' || err.name === 'AbortError' ? S.timeout : err.message);
+      return;
+    }
+    if (token !== askToken) return;
+    if (name.ja) { current = id; return ask(name); }
+  }
+  if (token === askToken) showError(S.noKana);
+}
+
+function ask(name, keep = '') {
+  asking = name;
+  screen = 'question';
+  const input = el('input', {
+    type: 'text', autocapitalize: 'off', autocomplete: 'off',
+    autocorrect: 'off', spellcheck: false, placeholder: 'romaji', value: keep,
+  });
+  const submit = () => reveal(name, input.value);
+
+  app.replaceChildren(
+    ...(showCue ? [spriteEl(current, '', 'cue')] : []),
+    el('div', { id: 'kana', textContent: name.ja }),
+    el('div', { id: 'hint', textContent: S.kanaCount([...name.ja].length) }),
+    input,
+    el('div', { className: 'row' },
+      el('button', { textContent: S.check, onclick: submit }),
+      el('button', { className: 'ghost', textContent: S.skip, onclick: () => reveal(name, '') })
+    )
+  );
+  input.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();   // otherwise Enter's default action lands on whatever reveal() focuses next
+    submit();
+  });
+  input.focus();
+}
+
+// Scoring happens once, here; showAnswer is pure render so it can be re-run on a language switch.
+function reveal(name, answer) {
+  const correct = answer.trim() !== '' && matches(answer, name.ja);
+  const box = progress[current] || 1;
+  progress[current] = correct ? Math.min(box + 1, 5) : 1;
+  save(PROGRESS_KEY, progress);
+  renderStats();
+  if (autoSpeak) speak(name.ja);
+  showAnswer(name, answer, correct);
+}
+
+function showAnswer(name, answer, correct) {
+  asking = null;
+  screen = 'answer';
+  shown = { name, answer, correct };
+  revealedAt = performance.now();
+  const next = el('button', { textContent: S.next, onclick: askNext });
+
+  app.replaceChildren(
+    spriteEl(current, name.en || ''),
+    el('div', { id: 'answer' },
+      el('div', { id: 'kana', style: 'font-size:28px', textContent: name.ja }),
+      el('div', { id: 'romaji', textContent: toRomaji(name.ja) }),
+      el('div', { id: 'en', textContent: name.en || '' })
+    ),
+    el('div', {
+      id: 'verdict', className: correct ? 'ok' : 'no',
+      textContent: correct ? S.correct : (answer.trim() ? S.wrong(answer.trim()) : S.skipped),
+    }),
+    el('div', { className: 'row' },
+      next,
+      el('button', { className: 'speak', textContent: S.play, onclick: () => speak(name.ja) })
+    )
+  );
+}
+
+// ---------- self-check: open with #test ----------
+
+const ACCEPT = [
+  ['ピカチュウ', 'pikachu', 'pikachuu', 'PIKACHU'],
+  ['フシギダネ', 'fushigidane', 'husigidane'],
+  ['リザードン', 'rizadon', 'rizaadon', 'rizaadonn'],
+  ['コダック', 'kodakku'],
+  ['ミュウツー', 'myutsu', 'myuutsuu'],
+  ['ニャース', 'nyasu', 'nyaasu'],
+  ['カイリュー', 'kairyu', 'kairyuu'],
+  ['ポッポ', 'poppo'],
+  ['ゼニガメ', 'zenigame'],
+  ['ファイヤー', 'faiya', 'faiyaa', 'fai-yaa'],
+  ['ジュペッタ', 'jupetta', 'jyupetta'],
+  ['イーブイ', 'ibui', 'iibui', 'i-bui'],
+  ['シャワーズ', 'shawazu', 'syawaazu'],
+];
+
+const REJECT = [
+  ['ポッポ', 'popo'],           // 促音 must survive vowel collapsing
+  ['コダック', 'kodaku'],
+  ['ファイヤー', 'fuaiyaa'],
+  ['ピカチュウ', 'pikachi', 'pikachou'],
+  ['ニャース', 'nasu'],
+];
+
+function runTests() {
+  const lines = [];
+  let bad = 0;
+  const check = (want, kana, input) => {
+    const got = matches(input, kana);
+    if (got !== want) bad++;
+    lines.push(`${got === want ? 'ok  ' : 'FAIL'} ${want ? 'accept' : 'reject'} ${kana} "${input}" → ${norm(toRomaji(kana))}`);
+  };
+  for (const [kana, ...inputs] of ACCEPT) for (const i of inputs) check(true, kana, i);
+  for (const [kana, ...inputs] of REJECT) for (const i of inputs) check(false, kana, i);
+
+  const out = document.getElementById('tests');
+  out.hidden = false;
+  out.textContent = lines.join('\n') + `\n\n${bad === 0 ? 'all pass' : bad + ' failed'}`;
+  console.assert(bad === 0, 'romaji matcher failed');
+}
+
+if (location.hash === '#test') runTests();
+applyLang();
+renderGens();
+askNext();
+</script>
+</body>
+</html>
