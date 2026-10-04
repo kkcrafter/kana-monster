@@ -482,7 +482,7 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v)) || 
 
 let sessionType = load(SESSION_KEY, 'practice') === 'challenge' ? 'challenge' : 'practice';
 let practiceCount = clamp(load(COUNT_KEY, 10), 1, 200);
-let challengeMins = clamp(load(MINS_KEY, 5), 1, 60);
+let challengeMins = clamp(load(MINS_KEY, 1), 1, 60);
 const best = load(BEST_KEY, {});          // `${mode}-${minutes}` -> most correct in one challenge
 let session = null;
 
