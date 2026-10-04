@@ -305,7 +305,7 @@ const I18N = {
     attempted: (a) => `共作答 ${a} 題`, review: '需要複習', allCorrect: '全部答對！',
     redo: '重做這組', newSet: '換新題目', again: '再挑戰一次', strokeCredit: '筆順資料：',
     clear: '清除', done: '完成', timeUp: '時間到',
-    gotIt: '寫對了', missed: '寫錯了', writeHint: '依讀音寫出片假名',
+    gotIt: '記住了', missed: '再練', writeHint: '依讀音寫出片假名',
   },
   en: {
     name: 'EN', htmlLang: 'en',
@@ -329,7 +329,7 @@ const I18N = {
     attempted: (a) => `${a} attempted`, review: 'To review', allCorrect: 'All correct!',
     redo: 'Redo this set', newSet: 'New set', again: 'Try again', strokeCredit: 'Stroke order:',
     clear: 'Clear', done: 'Done', timeUp: "Time's up",
-    gotIt: 'Got it', missed: 'Missed', writeHint: 'Write the katakana from the reading',
+    gotIt: 'Remembered', missed: 'Practice again', writeHint: 'Write the katakana from the reading',
   },
   ja: {
     name: '日', htmlLang: 'ja',
@@ -353,7 +353,7 @@ const I18N = {
     attempted: (a) => `${a}問に挑戦`, review: '復習しよう', allCorrect: '全問正解！',
     redo: 'もう一度', newSet: '新しい問題', again: 'もう一度挑戦', strokeCredit: '筆順データ：',
     clear: '消す', done: '完了', timeUp: '時間切れ',
-    gotIt: '書けた', missed: '書けなかった', writeHint: '読みから片仮名を書く',
+    gotIt: '覚えた', missed: '要練習', writeHint: '読みから片仮名を書く',
   },
 };
 
@@ -915,7 +915,7 @@ function finishWrite(name) {
   showWriteAnswer(name);
 }
 
-// Self-assessed: handwriting has no automatic verdict, so the learner grades it.
+// Recall self-rating, flashcard style: mouse and trackpad strokes are too imprecise to grade automatically.
 function showWriteAnswer(name) {
   asking = null;
   screen = 'writeAnswer';
