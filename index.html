@@ -227,6 +227,9 @@ const MONO = {
   'バ':'ba','ビ':'bi','ブ':'bu','ベ':'be','ボ':'bo',
   'パ':'pa','ピ':'pi','プ':'pu','ペ':'pe','ポ':'po',
   'ヴ':'vu',
+  // Small kana left over after the digraphs: a small vowel after its own vowel is a lengthening (ピィ = pii).
+  'ァ':'a','ィ':'i','ゥ':'u','ェ':'e','ォ':'o','ャ':'ya','ュ':'yu','ョ':'yo','ヮ':'wa','ヵ':'ka','ヶ':'ke',
+  '・':' ',
 };
 
 function toRomaji(kana) {
@@ -242,11 +245,16 @@ function toRomaji(kana) {
     let r, len;
     if (DIGRAPH[two]) { r = DIGRAPH[two]; len = 2; }
     else if (MONO[one]) { r = MONO[one]; len = 1; }
-    else { r = one; len = 1; }                // ponytail: pass through ・ and latin as-is
+    else {
+      // Pass symbols through, folding full-width ASCII (ポリゴン２, タイプ：ヌル) to plain.
+      const c = one.codePointAt(0);
+      r = c >= 0xFF01 && c <= 0xFF5E ? String.fromCodePoint(c - 0xFEE0) : one;
+      len = 1;
+    }
     if (geminate) { r = r[0] + r; geminate = false; }
     out += r; i += len;
   }
-  return out;
+  return out.replace(/([aiueo])\1{2,}/g, '$1$1');   // メェー would otherwise read "meee"
 }
 
 // Forgiving comparison: accept kunrei/wapuro spellings and any long-vowel writing.
@@ -1048,6 +1056,14 @@ const ACCEPT = [
   ['ジュペッタ', 'jupetta', 'jyupetta'],
   ['イーブイ', 'ibui', 'iibui', 'i-bui'],
   ['シャワーズ', 'shawazu', 'syawaazu'],
+  ['セレビィ', 'serebii', 'serebi'],
+  ['ピィ', 'pii', 'pi'],
+  ['ケーシィ', 'keeshii', 'keshi'],
+  ['スナバァ', 'sunabaa', 'sunaba'],
+  ['メェークル', 'meekuru', 'mekuru'],
+  ['カプ・コケコ', 'kapu kokeko', 'kapukokeko', 'kapu-kokeko'],
+  ['ポリゴン２', 'porigon2', 'porigon'],
+  ['タイプ：ヌル', 'taipu:nuru', 'taipunuru'],
 ];
 
 const REJECT = [
