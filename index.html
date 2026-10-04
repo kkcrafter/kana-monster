@@ -139,6 +139,8 @@
     border: 1px solid var(--line); border-radius: 8px;
   }
   .miss span { color: var(--muted); font-size: 13px; }
+  .miss span::after { content: '  ›'; color: var(--accent); font-size: 16px; }
+  .miss:hover { border-color: var(--accent); opacity: 1; }
 
   /* write mode */
   #prompt { font-size: 30px; font-weight: 600; letter-spacing: .02em; text-align: center; }
@@ -322,7 +324,7 @@ const I18N = {
     intro: (m, w) => `${m} 分鐘內，${w ? '寫出' : '認出'}越多片假名越好`, start: '開始挑戰',
     best: (n) => `最佳紀錄：${n} 題`, noBest: '尚無紀錄', newBest: '新紀錄！',
     practiceDone: (c, n) => `答對 ${c} / ${n} 題`, challengeDone: (c) => `答對 ${c} 題`,
-    attempted: (a) => `共作答 ${a} 題`, review: '需要複習', allCorrect: '全部答對！',
+    attempted: (a) => `共作答 ${a} 題`, review: '需要複習 · 點一下單字再練', allCorrect: '全部答對！',
     redo: '重做這組', newSet: '換新題目', again: '再挑戰一次', strokeCredit: '筆順資料：',
     clear: '清除', clearOne: '清除這個字', done: '完成', timeUp: '時間到',
     gotIt: '記住了', missed: '再練', writeHint: '依讀音寫出片假名',
@@ -346,7 +348,7 @@ const I18N = {
     intro: (m, w) => `${w ? 'Write' : 'Read'} as many katakana names as you can in ${m} min`, start: 'Start',
     best: (n) => `Best: ${n}`, noBest: 'No record yet', newBest: 'New best!',
     practiceDone: (c, n) => `${c} / ${n} correct`, challengeDone: (c) => `${c} correct`,
-    attempted: (a) => `${a} attempted`, review: 'To review', allCorrect: 'All correct!',
+    attempted: (a) => `${a} attempted`, review: 'To review · tap a word to practice it', allCorrect: 'All correct!',
     redo: 'Redo this set', newSet: 'New set', again: 'Try again', strokeCredit: 'Stroke order:',
     clear: 'Clear', clearOne: 'Clear this character', done: 'Done', timeUp: "Time's up",
     gotIt: 'Remembered', missed: 'Practice again', writeHint: 'Write the katakana from the reading',
@@ -370,7 +372,7 @@ const I18N = {
     intro: (m, w) => `${m}分間で、できるだけ多く${w ? '書こう' : '読もう'}`, start: 'スタート',
     best: (n) => `ベスト：${n}問`, noBest: '記録なし', newBest: '新記録！',
     practiceDone: (c, n) => `${n}問中 ${c}問正解`, challengeDone: (c) => `${c}問正解`,
-    attempted: (a) => `${a}問に挑戦`, review: '復習しよう', allCorrect: '全問正解！',
+    attempted: (a) => `${a}問に挑戦`, review: '復習しよう・タップでもう一度', allCorrect: '全問正解！',
     redo: 'もう一度', newSet: '新しい問題', again: 'もう一度挑戦', strokeCredit: '筆順データ：',
     clear: '消す', clearOne: 'この字を消す', done: '完了', timeUp: '時間切れ',
     gotIt: '覚えた', missed: '要練習', writeHint: '読みから片仮名を書く',
@@ -1059,11 +1061,12 @@ function drawSet(n) {
   return [...taken];
 }
 
-function startSession(queue) {
+// `parent`: the finished session whose summary a one-word retry returns to.
+function startSession(queue, type = sessionType, parent = null) {
   stopSessionTimer();
   askToken++;   // drop any card still loading for the previous session
-  if (sessionType === 'practice') {
-    session = { type: 'practice', queue: queue ?? drawSet(practiceCount), results: [] };
+  if (type === 'practice') {
+    session = { type: 'practice', queue: queue ?? drawSet(practiceCount), results: [], parent };
     askNext();
   } else {
     session = { type: 'challenge', results: [], seen: new Set(), endsAt: 0 };
@@ -1104,6 +1107,10 @@ function record(name, correct, answer = '') {
 function endSession() {
   stopSessionTimer();
   askToken++;
+  if (session.parent) {   // a retry from a summary: go back to that summary, already scored
+    session = session.parent;
+    return renderSummary();
+  }
   if (session.type === 'challenge') {
     const correct = session.results.filter(r => r.correct).length;
     const prev = best[bestKey()];
@@ -1138,7 +1145,7 @@ function renderSummary() {
   const list = misses.length
     ? [el('div', { id: 'misses' },
         el('div', { id: 'misses-title', textContent: S.review }),
-        ...misses.map(r => el('button', { className: 'miss', onclick: () => speak(r.ja) },
+        ...misses.map(r => el('button', { className: 'miss', onclick: () => startSession([r.id], 'practice', session) },
           r.ja, el('span', { textContent: toRomaji(r.ja) })))
       )]
     : results.length ? [el('div', { id: 'verdict', className: 'ok', textContent: S.allCorrect })] : [];
