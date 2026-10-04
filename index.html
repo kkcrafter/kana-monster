@@ -164,15 +164,13 @@
   footer a { color: inherit; }
   .cell canvas { position: absolute; inset: 0; touch-action: none; }
   /* One transparent layer over the whole writing band takes all pointer input and carries the
-     pen-tip cursor. Chrome flickers a custom cursor whenever the element under it changes, so the
-     pointer must never be over the cells, the gaps or the numbers poking above them directly. */
+     pen-tip cursor. Chromium on some Macs flickers any non-default cursor, even the built-in
+     crosshair (Safari doesn't); re-applying it at every cell, gap and stroke-number edge made that
+     worse, so the pointer is only ever over this one element. */
   #cells { position: relative; padding-top: 10px; padding-inline: 6px; margin-top: -10px; }
   .ink-layer {
     position: absolute; inset: 0; z-index: 2; touch-action: none;
-    /* PNG, not SVG: Chrome re-rasterises an SVG cursor whenever it re-applies it (e.g. when hover
-       moves to the next cell), and each re-rasterised copy counts as a new cursor, so it flickered. */
-    cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAATklEQVR42mNgIAf8///fAYj7odgBl6L+/79+/v9/7DAEg9hAMUyTQBJFWf//B3lAMIgNUeyAahrIFJgiGAaJIZtKikLirCbaMyQFDyEAANaCqsEW4zVlAAAAAElFTkSuQmCC") 5 5, crosshair;
-    cursor: -webkit-image-set(url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAATklEQVR42mNgIAf8///fAYj7odgBl6L+/79+/v9/7DAEg9hAMUyTQBJFWf//B3lAMIgNUeyAahrIFJgiGAaJIZtKikLirCbaMyQFDyEAANaCqsEW4zVlAAAAAElFTkSuQmCC") 1x, url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAApUlEQVR42mNgGPLg////PECsA8U8lBjkAcT7gfj3fwT4DRXzIMUgFiCe/58wAKlhIcZAhGEvX/z/v2D2//+1ZRAMYoPEkAwlxpsQcOzw//9Rgf//B3mgYpAYSA4BPPAZuB/uMmyGIRuKcOl+fLEJiQCQ13AZBsMgNYiI4sFmoA7cE6DwImQgSA0C6NDFQOp6meqRQpNkQ/WETZOsR/XCgWbF16ABAFKpe5crH6rcAAAAAElFTkSuQmCC") 2x) 5 5, crosshair;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Ccircle cx='5' cy='5' r='3' fill='%23ff5248' stroke='white' stroke-width='1.2'/%3E%3C/svg%3E") 5 5, crosshair;
   }
   /* Below the cell, never over it: the top-right corner is where dakuten get written. */
   #cells { padding-bottom: 30px; row-gap: 38px; }
