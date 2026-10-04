@@ -161,6 +161,26 @@
   .strokes text { fill: var(--muted); font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; }
   footer a { color: inherit; }
   .cell canvas { position: absolute; inset: 0; touch-action: none; cursor: crosshair; }
+  /* Below the cell, never over it: the top-right corner is where dakuten get written. */
+  #cells { padding-bottom: 30px; row-gap: 38px; }
+  #cells.done { padding-bottom: 0; row-gap: 8px; }
+  .cell-clear {
+    position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    z-index: 1;   /* above the hover strip (.cell::after), which would otherwise swallow the click */
+    flex: none; width: 24px; height: 24px; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: 1px solid var(--line);
+    background: var(--card); color: var(--muted);
+  }
+  .cell-clear svg { width: 14px; height: 14px; }
+  /* The whole strip under a cell counts as hovering it, so the pointer can wander around the button. */
+  .cell::after { content: ''; position: absolute; left: -4px; right: -4px; top: 100%; height: 38px; }
+  @media (hover: hover) {
+    /* Leaving keeps the button visible and clickable for a moment before it fades. */
+    .cell-clear { opacity: 0; visibility: hidden; transition: opacity .15s .4s, visibility 0s .55s; }
+    .cell:hover .cell-clear, .cell-clear:focus-visible { opacity: 1; visibility: visible; transition: opacity .12s, visibility 0s; }
+  }
+  #cells.done .cell-clear { display: none !important; }   /* nothing left to fix once revealed */
 </style>
 </head>
 <body>
@@ -304,7 +324,7 @@ const I18N = {
     practiceDone: (c, n) => `答對 ${c} / ${n} 題`, challengeDone: (c) => `答對 ${c} 題`,
     attempted: (a) => `共作答 ${a} 題`, review: '需要複習', allCorrect: '全部答對！',
     redo: '重做這組', newSet: '換新題目', again: '再挑戰一次', strokeCredit: '筆順資料：',
-    clear: '清除', done: '完成', timeUp: '時間到',
+    clear: '清除', clearOne: '清除這個字', done: '完成', timeUp: '時間到',
     gotIt: '記住了', missed: '再練', writeHint: '依讀音寫出片假名',
   },
   en: {
@@ -328,7 +348,7 @@ const I18N = {
     practiceDone: (c, n) => `${c} / ${n} correct`, challengeDone: (c) => `${c} correct`,
     attempted: (a) => `${a} attempted`, review: 'To review', allCorrect: 'All correct!',
     redo: 'Redo this set', newSet: 'New set', again: 'Try again', strokeCredit: 'Stroke order:',
-    clear: 'Clear', done: 'Done', timeUp: "Time's up",
+    clear: 'Clear', clearOne: 'Clear this character', done: 'Done', timeUp: "Time's up",
     gotIt: 'Remembered', missed: 'Practice again', writeHint: 'Write the katakana from the reading',
   },
   ja: {
@@ -352,7 +372,7 @@ const I18N = {
     practiceDone: (c, n) => `${n}問中 ${c}問正解`, challengeDone: (c) => `${c}問正解`,
     attempted: (a) => `${a}問に挑戦`, review: '復習しよう', allCorrect: '全問正解！',
     redo: 'もう一度', newSet: '新しい問題', again: 'もう一度挑戦', strokeCredit: '筆順データ：',
-    clear: '消す', done: '完了', timeUp: '時間切れ',
+    clear: '消す', clearOne: 'この字を消す', done: '完了', timeUp: '時間切れ',
     gotIt: '覚えた', missed: '要練習', writeHint: '読みから片仮名を書く',
   },
 };
@@ -825,6 +845,25 @@ function ask(name, keep = '') {
 
 // ---------- write mode ----------
 
+// Circular arrow (↺), drawn inline so it looks the same in every font.
+function resetIcon() {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2.4');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  for (const d of ['M3.5 15a9 9 0 1 0 2.1-9.4L3 9', 'M3 3v6h6']) {
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', d);
+    svg.append(p);
+  }
+  return svg;
+}
+
 // Fit one name on one row where possible; never below a finger-sized 48px.
 function cellSize(n) {
   const room = app.clientWidth - 40 - (n - 1) * 8;   // main's horizontal padding, grid gap
@@ -849,8 +888,10 @@ function makeCell(ch, size) {
     return [e.clientX - r.left, e.clientY - r.top];
   };
   let drawing = false;
+  const wipe = el('button', { className: 'cell-clear', hidden: true, onclick: () => cell.clear() }, resetIcon());
   canvas.addEventListener('pointerdown', (e) => {
     drawing = true;
+    wipe.hidden = false;
     canvas.setPointerCapture(e.pointerId);
     ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
     ctx.beginPath();
@@ -875,9 +916,9 @@ function makeCell(ch, size) {
     guide.style.fontSize = `${Math.round(size * 0.66)}px`;
     getStrokes(ch).then((s) => { if (s) guide.replaceChildren(strokeSvg(s)); });
   }
-  const cell = el('div', { className: 'cell' }, guide, canvas);
+  const cell = el('div', { className: 'cell' }, guide, canvas, wipe);
   cell.style.width = cell.style.height = `${size}px`;
-  cell.clear = () => ctx.clearRect(0, 0, size, size);
+  cell.clear = () => { ctx.clearRect(0, 0, size, size); wipe.hidden = true; };
   return cell;
 }
 
@@ -896,6 +937,7 @@ function renderWrite() {
   screen = 'write';
   grid.classList.toggle('noguide', !showGuide);
   grid.classList.toggle('nonums', !showNums);
+  for (const b of grid.querySelectorAll('.cell-clear')) { b.title = S.clearOne; b.setAttribute('aria-label', S.clearOne); }
 
   app.replaceChildren(
     ...(showCue ? [spriteEl(current, '', 'cue')] : []),
@@ -922,6 +964,7 @@ function showWriteAnswer(name) {
   shownWrite = { name };
   revealedAt = performance.now();
   writing.grid.classList.remove('noguide');   // the faint glyph under your strokes is the comparison
+  writing.grid.classList.add('done');
 
   const grade = (correct) => {
     const box = progress[current] || 1;
