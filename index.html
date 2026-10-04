@@ -102,6 +102,41 @@
   .speak { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 14px; padding: 2px 6px; flex: none; }
   footer { font-size: 12px; color: var(--muted); max-width: 420px; text-align: center; }
   #tests { font: 13px/1.6 ui-monospace, monospace; max-width: 640px; white-space: pre-wrap; }
+
+  /* write mode */
+  #wtoggles { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  #wtoggles label {
+    font-size: 13px; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; gap: 5px; user-select: none; white-space: nowrap;
+  }
+  #wtoggles input[type="checkbox"] {
+    width: auto; padding: 0; margin: 0; border: none; background: none;
+    accent-color: var(--accent); cursor: pointer;
+  }
+  #wtoggles input[type="number"] {
+    width: 52px; padding: 2px 6px; font-size: 13px; text-align: center;
+    border-radius: 6px; border: 1px solid var(--line);
+  }
+  #prompt { font-size: 30px; font-weight: 600; letter-spacing: .02em; text-align: center; }
+  #timer {
+    font: 600 15px/1 ui-monospace, monospace; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  #timer.low { color: var(--no); }
+  #cells { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .cell {
+    position: relative; flex: none;
+    border: 1px solid var(--line); border-radius: 8px;
+    background:
+      repeating-linear-gradient(to bottom, var(--line) 0 4px, transparent 4px 9px) center / 1px 100% no-repeat,
+      repeating-linear-gradient(to right, var(--line) 0 4px, transparent 4px 9px) center / 100% 1px no-repeat;
+  }
+  .cell .guide {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--line); user-select: none; pointer-events: none;
+  }
+  #cells.noguide .guide { display: none; }
+  .cell canvas { position: absolute; inset: 0; touch-action: none; cursor: crosshair; }
 </style>
 </head>
 <body>
@@ -114,11 +149,17 @@
 <div id="controls">
   <div id="gens"></div>
   <div id="row2">
-    <div id="toggles">
-      <label><input type="checkbox" id="cue"> <span id="cue-label"></span></label>
-      <label><input type="checkbox" id="autospeak"> <span id="speak-label"></span></label>
-    </div>
+    <div id="modes"></div>
     <div id="langs"></div>
+  </div>
+  <div id="toggles">
+    <label><input type="checkbox" id="cue"> <span id="cue-label"></span></label>
+    <label><input type="checkbox" id="autospeak"> <span id="speak-label"></span></label>
+  </div>
+  <div id="wtoggles" hidden>
+    <label><input type="checkbox" id="usetimer"> <span id="timer-label"></span></label>
+    <label><input type="number" id="timersecs" min="5" max="600" step="5"> <span id="sec-label"></span></label>
+    <label><input type="checkbox" id="guide"> <span id="guide-label"></span></label>
   </div>
 </div>
 
@@ -216,6 +257,11 @@ const I18N = {
     loadFail: (m) => `載入失敗：${m}`, retry: '重試',
     timeout: '連線逾時', noKana: '連續 8 張都冇片假名名', imgFail: '圖片載入失敗',
     footer: '片假名 → 讀出 → 揭曉。圖同名 runtime 由 PokéAPI 取，本 repo 不含任何圖像。',
+    gens: ['紅・綠', '金・銀', '紅寶石・藍寶石', '鑽石・珍珠', '黑・白', 'X・Y', '太陽・月亮', '劍・盾', '朱・紫'],
+    read: '讀', write: '寫',
+    timer: '計時', sec: '秒', guide: '描紅',
+    clear: '清除', done: '完成', timeUp: '時間到',
+    gotIt: '寫啱咗', missed: '寫錯', writeHint: '憑讀音寫出片假名',
   },
   en: {
     name: 'EN', htmlLang: 'en',
@@ -227,6 +273,11 @@ const I18N = {
     loadFail: (m) => `Failed to load: ${m}`, retry: 'Retry',
     timeout: 'Request timed out', noKana: 'No katakana names in 8 tries', imgFail: 'Image failed to load',
     footer: 'Read the katakana, then reveal. Names and art are fetched from PokéAPI at runtime — this repo ships no images.',
+    gens: ['Red & Blue', 'Gold & Silver', 'Ruby & Sapphire', 'Diamond & Pearl', 'Black & White', 'X & Y', 'Sun & Moon', 'Sword & Shield', 'Scarlet & Violet'],
+    read: 'Read', write: 'Write',
+    timer: 'Timer', sec: 'sec', guide: 'Tracing guide',
+    clear: 'Clear', done: 'Done', timeUp: "Time's up",
+    gotIt: 'Got it', missed: 'Missed', writeHint: 'Write the katakana from the reading',
   },
   ja: {
     name: '日', htmlLang: 'ja',
@@ -238,6 +289,11 @@ const I18N = {
     loadFail: (m) => `読み込み失敗：${m}`, retry: '再試行',
     timeout: '接続タイムアウト', noKana: '8回連続で片仮名の名前なし', imgFail: '画像を読み込めません',
     footer: '片仮名を読んでから答え合わせ。名前と画像は PokéAPI から実行時に取得し、このリポジトリに画像は含みません。',
+    gens: ['赤・緑', '金・銀', 'ルビー・サファイア', 'ダイヤモンド・パール', 'ブラック・ホワイト', 'X・Y', 'サン・ムーン', 'ソード・シールド', 'スカーレット・バイオレット'],
+    read: '読み', write: '書き',
+    timer: 'タイマー', sec: '秒', guide: 'なぞり書き',
+    clear: '消す', done: '完了', timeUp: '時間切れ',
+    gotIt: '書けた', missed: '書けなかった', writeHint: '読みから片仮名を書く',
   },
 };
 
@@ -247,6 +303,8 @@ const I18N = {
 const NAMES_KEY = 'kanamon.names.v2', PROGRESS_KEY = 'kanamon.progress';
 const CUE_KEY = 'kanamon.cue', SPEAK_KEY = 'kanamon.autospeak';
 const GENS_KEY = 'kanamon.gens', LANG_KEY = 'kanamon.lang';
+const MODE_KEY = 'kanamon.mode', TIMER_KEY = 'kanamon.timer';
+const SECS_KEY = 'kanamon.timersecs', GUIDE_KEY = 'kanamon.guide';
 
 function load(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
@@ -261,17 +319,10 @@ const progress = load(PROGRESS_KEY, {}); // id -> Leitner box 1..5
 
 // ---------- deck ----------
 
-// National dex ranges, gen 1..9, named after each generation's paired titles
+// National dex ranges, gen 1..9. Titles live in I18N[lang].gens.
 const GENS = [
-  [1, 151, '赤・緑'],
-  [152, 251, '金・銀'],
-  [252, 386, 'ルビー・サファイア'],
-  [387, 493, 'ダイヤモンド・パール'],
-  [494, 649, 'ブラック・ホワイト'],
-  [650, 721, 'X・Y'],
-  [722, 809, 'サン・ムーン'],
-  [810, 905, 'ソード・シールド'],
-  [906, 1025, 'スカーレット・バイオレット'],
+  [1, 151], [152, 251], [252, 386], [387, 493], [494, 649],
+  [650, 721], [722, 809], [810, 905], [906, 1025],
 ];
 
 let gens = load(GENS_KEY, [1]).filter(g => g >= 1 && g <= GENS.length);
@@ -353,6 +404,14 @@ const cueBox = document.getElementById('cue');
 const speakBox = document.getElementById('autospeak');
 const genBar = document.getElementById('gens');
 const langBar = document.getElementById('langs');
+const modeBar = document.getElementById('modes');
+const wToggles = document.getElementById('wtoggles');
+const timerBox = document.getElementById('usetimer');
+const secsBox = document.getElementById('timersecs');
+const guideBox = document.getElementById('guide');
+const timerLabel = document.getElementById('timer-label');
+const secLabel = document.getElementById('sec-label');
+const guideLabel = document.getElementById('guide-label');
 const footerEl = document.getElementById('footer');
 const cueLabel = document.getElementById('cue-label');
 const speakLabel = document.getElementById('speak-label');
@@ -362,16 +421,31 @@ let autoSpeak = load(SPEAK_KEY, false);  // 🔊 on the answer screen still work
 let lang = I18N[load(LANG_KEY, 'zh')] ? load(LANG_KEY, 'zh') : 'zh';
 let S = I18N[lang];
 
+let mode = load(MODE_KEY, 'read') === 'write' ? 'write' : 'read';
+let useTimer = load(TIMER_KEY, true);
+let timerSecs = Math.min(600, Math.max(5, load(SECS_KEY, 60)));
+let showGuide = load(GUIDE_KEY, true);
+
 let asking = null;                       // the name currently being asked, for the cue toggle
 let shown = null;                        // the answer on screen, for re-rendering on language change
-let screen = 'loading';                  // loading | question | answer
+let shownWrite = null;
+let writing = null;                      // {name, grid, cells} — the grid node is reused so strokes survive
+let screen = 'loading';                  // loading | question | answer | write | writeAnswer
 let revealedAt = 0;
+
+// Redraw whatever is on screen with current settings, without re-scoring or wiping strokes.
+function rerender() {
+  if (screen === 'question') ask(asking, app.querySelector('#app input')?.value ?? '');
+  else if (screen === 'answer') showAnswer(shown.name, shown.answer, shown.correct);
+  else if (screen === 'write') renderWrite();
+  else if (screen === 'writeAnswer') showWriteAnswer(shownWrite.name, shownWrite.timedOut);
+}
 
 cueBox.checked = showCue;
 cueBox.addEventListener('change', () => {
   showCue = cueBox.checked;
   save(CUE_KEY, showCue);
-  if (asking) ask(asking, app.querySelector('input')?.value ?? '');
+  rerender();
 });
 
 speakBox.checked = autoSpeak;
@@ -381,13 +455,54 @@ speakBox.addEventListener('change', () => {
   if (!autoSpeak) speechSynthesis?.cancel();
 });
 
-// Enter on the answer screen. Handled here rather than by focusing the button, so the
-// keypress that submitted the answer cannot activate it — hence the guard window.
+timerBox.checked = useTimer;
+timerBox.addEventListener('change', () => {
+  useTimer = timerBox.checked;
+  save(TIMER_KEY, useTimer);
+  if (screen === 'write') startTimer(writing.timer, () => finishWrite(writing.name, true));
+});
+
+secsBox.value = timerSecs;
+secsBox.addEventListener('change', () => {
+  timerSecs = Math.min(600, Math.max(5, Math.round(Number(secsBox.value) || 60)));
+  secsBox.value = timerSecs;
+  save(SECS_KEY, timerSecs);
+  if (screen === 'write') startTimer(writing.timer, () => finishWrite(writing.name, true));
+});
+
+guideBox.checked = showGuide;
+guideBox.addEventListener('change', () => {
+  showGuide = guideBox.checked;
+  save(GUIDE_KEY, showGuide);
+  writing?.grid.classList.toggle('noguide', !showGuide);
+});
+
+// The name whose pronunciation Space should play, or null where hearing it would give the answer away.
+function speakable() {
+  if (screen === 'answer') return shown.name.ja;
+  if (screen === 'writeAnswer') return shownWrite.name.ja;
+  if (screen === 'write') return writing.name.ja;   // the reading is already on screen as romaji
+  return null;
+}
+
 document.addEventListener('keydown', (e) => {
-  if (e.key !== 'Enter' || screen !== 'answer') return;
-  if (performance.now() - revealedAt < 300) return;   // swallow the keypress that opened this screen
-  e.preventDefault();
-  askNext();
+  // Leave typing and native checkbox toggling alone.
+  if (e.target.closest?.('input, textarea, select')) return;
+
+  if (e.key === ' ') {
+    const text = speakable();
+    if (!text) return;
+    e.preventDefault();   // no page scroll, no activating whichever button kept focus
+    if (!e.repeat) speak(text);
+    return;
+  }
+
+  if (e.key !== 'Enter') return;
+  // Handled here rather than by focusing a button, so the keypress that opened
+  // this screen cannot also activate something on it — hence the guard window.
+  if (performance.now() - revealedAt < 300) return;
+  if (screen === 'answer') { e.preventDefault(); askNext(); }
+  else if (screen === 'write') { e.preventDefault(); finishWrite(writing.name, false); }
 });
 
 function renderStats() {
@@ -396,11 +511,11 @@ function renderStats() {
 }
 
 function renderGens() {
-  genBar.replaceChildren(...GENS.map(([, , title], i) => {
+  genBar.replaceChildren(...GENS.map((_, i) => {
     const n = i + 1;
     const chip = el('button', { className: 'chip', onclick: () => toggleGen(n) },
       el('b', { textContent: n }),
-      el('span', { textContent: title })
+      el('span', { textContent: S.gens[i] })
     );
     chip.setAttribute('aria-pressed', gens.includes(n));
     return chip;
@@ -415,16 +530,37 @@ function renderLangs() {
   }));
 }
 
+function renderModes() {
+  modeBar.replaceChildren(...['read', 'write'].map((m) => {
+    const b = el('button', { className: 'lang', textContent: S[m], onclick: () => setMode(m) });
+    b.setAttribute('aria-pressed', m === mode);
+    return b;
+  }));
+  wToggles.hidden = mode !== 'write';
+}
+
+function setMode(m) {
+  if (m === mode) return;
+  mode = m;
+  save(MODE_KEY, mode);
+  renderModes();
+  askNext();
+}
+
 function applyLang() {
   S = I18N[lang];
   document.documentElement.lang = S.htmlLang;
   cueLabel.textContent = S.cue;
   speakLabel.textContent = S.autospeak;
+  timerLabel.textContent = S.timer;
+  secLabel.textContent = S.sec;
+  guideLabel.textContent = S.guide;
   footerEl.textContent = S.footer;
   renderLangs();
+  renderModes();
+  renderGens();
   renderStats();
-  if (screen === 'question') ask(asking, app.querySelector('input')?.value ?? '');
-  else if (screen === 'answer') showAnswer(shown.name, shown.answer, shown.correct);
+  rerender();
 }
 
 function setLang(code) {
@@ -463,7 +599,9 @@ let askToken = 0;
 // Bounded, not recursive: a deck with no usable katakana names must surface, not spin.
 async function askNext() {
   const token = ++askToken;   // a newer askNext (e.g. the user switched generation) wins
+  stopTimer();
   asking = null;
+  writing = null;
   screen = 'loading';
   app.replaceChildren(el('div', { id: 'kana', textContent: '…' }));
   for (let tries = 0; tries < 8; tries++) {
@@ -476,7 +614,7 @@ async function askNext() {
       return;
     }
     if (token !== askToken) return;
-    if (name.ja) { current = id; return ask(name); }
+    if (name.ja) { current = id; return mode === 'write' ? askWrite(name) : ask(name); }
   }
   if (token === askToken) showError(S.noKana);
 }
@@ -506,6 +644,156 @@ function ask(name, keep = '') {
     submit();
   });
   input.focus();
+}
+
+// ---------- write mode ----------
+
+// Fit one name on one row where possible; never below a finger-sized 48px.
+function cellSize(n) {
+  const room = app.clientWidth - 40 - (n - 1) * 8;   // main's horizontal padding, grid gap
+  return Math.max(48, Math.min(72, Math.floor(room / n)));
+}
+
+// One canvas per kana, with a faint character behind it to trace over.
+function makeCell(ch, size) {
+  const canvas = document.createElement('canvas');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  canvas.style.width = canvas.style.height = `${size}px`;
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.lineWidth = 4;
+  ctx.lineCap = ctx.lineJoin = 'round';
+
+  const at = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  };
+  let drawing = false;
+  canvas.addEventListener('pointerdown', (e) => {
+    drawing = true;
+    canvas.setPointerCapture(e.pointerId);
+    ctx.strokeStyle = getComputedStyle(document.body).color;
+    ctx.beginPath();
+    ctx.moveTo(...at(e));
+    ctx.lineTo(...at(e));   // a tap alone should leave a dot
+    ctx.stroke();
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!drawing) return;
+    ctx.lineTo(...at(e));
+    ctx.stroke();
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
+    canvas.addEventListener(ev, () => { drawing = false; });
+  }
+
+  const guide = el('div', { className: 'guide', textContent: ch });
+  guide.style.fontSize = `${Math.round(size * 0.66)}px`;
+  const cell = el('div', { className: 'cell' }, guide, canvas);
+  cell.style.width = cell.style.height = `${size}px`;
+  cell.clear = () => ctx.clearRect(0, 0, size, size);
+  return cell;
+}
+
+let timerId = null;
+
+function stopTimer() {
+  clearInterval(timerId);
+  timerId = null;
+}
+
+function startTimer(display, onEnd) {
+  stopTimer();
+  if (!useTimer) { display.hidden = true; return; }
+  display.hidden = false;
+  let left = timerSecs;
+  const tick = () => {
+    display.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    display.classList.toggle('low', left <= 10);
+  };
+  tick();
+  timerId = setInterval(() => {
+    left--;
+    tick();
+    if (left <= 0) { stopTimer(); onEnd(); }
+  }, 1000);
+}
+
+function askWrite(name) {
+  const chars = [...name.ja];
+  const size = cellSize(chars.length);
+  const cells = chars.map(ch => makeCell(ch, size));
+  writing = {
+    name, cells,
+    grid: el('div', { id: 'cells' }, ...cells),
+    timer: el('div', { id: 'timer' }),
+  };
+  renderWrite();
+  startTimer(writing.timer, () => finishWrite(name, true));
+}
+
+// Pure layout. The grid and timer nodes are reused, so strokes and the countdown survive a redraw.
+function renderWrite() {
+  const { name, cells, grid, timer } = writing;
+  asking = name;
+  screen = 'write';
+  grid.classList.toggle('noguide', !showGuide);
+
+  app.replaceChildren(
+    ...(showCue ? [spriteEl(current, '', 'cue')] : []),
+    el('div', { id: 'prompt', textContent: toRomaji(name.ja) }),
+    el('div', { id: 'hint', textContent: S.writeHint }),
+    timer,
+    grid,
+    el('div', { className: 'row' },
+      el('button', { textContent: S.done, onclick: () => finishWrite(name, false) }),
+      el('button', { className: 'ghost', textContent: S.clear, onclick: () => cells.forEach(c => c.clear()) })
+    )
+  );
+}
+
+function finishWrite(name, timedOut) {
+  if (screen !== 'write') return;   // timer expiry and a click can race
+  stopTimer();
+  if (autoSpeak) speak(name.ja);
+  showWriteAnswer(name, timedOut);
+}
+
+// Self-assessed: handwriting has no automatic verdict, so the learner grades it.
+function showWriteAnswer(name, timedOut) {
+  asking = null;
+  screen = 'writeAnswer';
+  shownWrite = { name, timedOut };
+  revealedAt = performance.now();
+  writing.grid.classList.remove('noguide');   // the faint glyph under your strokes is the comparison
+
+  const grade = (correct) => {
+    const box = progress[current] || 1;
+    progress[current] = correct ? Math.min(box + 1, 5) : 1;
+    save(PROGRESS_KEY, progress);
+    renderStats();
+    askNext();
+  };
+
+  app.replaceChildren(
+    ...(timedOut ? [el('div', { id: 'verdict', className: 'no', textContent: S.timeUp })] : []),
+    el('div', { id: 'answer' },
+      el('div', { id: 'kana', style: 'font-size:34px', textContent: name.ja }),
+      el('div', { id: 'romaji', textContent: toRomaji(name.ja) }),
+      el('div', { id: 'en', textContent: name.en || '' })
+    ),
+    writing.grid,
+    el('div', { className: 'row' },
+      el('button', { textContent: S.gotIt, onclick: () => grade(true) }),
+      el('button', { className: 'ghost', textContent: S.missed, onclick: () => grade(false) })
+    ),
+    el('div', { className: 'row' },
+      el('button', { className: 'speak', textContent: S.play, onclick: () => speak(name.ja) })
+    )
+  );
 }
 
 // Scoring happens once, here; showAnswer is pure render so it can be re-run on a language switch.
@@ -589,7 +877,6 @@ function runTests() {
 
 if (location.hash === '#test') runTests();
 applyLang();
-renderGens();
 askNext();
 </script>
 </body>
