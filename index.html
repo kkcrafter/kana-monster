@@ -762,6 +762,12 @@ async function askNext() {
     }
     if (token !== askToken) return;
     if (name.ja) {
+      if (mode === 'write') {
+        // Load the stroke guides before showing the card, so the glyph doesn't visibly swap shape.
+        const strokes = Promise.all([...name.ja].filter(isKana).map(getStrokes));
+        await Promise.race([strokes, new Promise(r => setTimeout(r, 2000))]);
+        if (token !== askToken) return;
+      }
       current = id;
       session.seen?.add(id);
       return mode === 'write' ? askWrite(name) : ask(name);
@@ -844,9 +850,14 @@ function makeCell(ch, size) {
     canvas.addEventListener(ev, () => { drawing = false; });
   }
 
-  const guide = el('div', { className: 'guide', textContent: ch });
-  guide.style.fontSize = `${Math.round(size * 0.66)}px`;
-  getStrokes(ch).then((s) => { if (s) guide.replaceChildren(strokeSvg(s)); });
+  const guide = el('div', { className: 'guide' });
+  if (strokeCache[ch]) guide.append(strokeSvg(strokeCache[ch]));
+  else {
+    // Only reached if the stroke data was slow or unavailable: plain glyph now, strokes if they arrive.
+    guide.textContent = ch;
+    guide.style.fontSize = `${Math.round(size * 0.66)}px`;
+    getStrokes(ch).then((s) => { if (s) guide.replaceChildren(strokeSvg(s)); });
+  }
   const cell = el('div', { className: 'cell' }, guide, canvas);
   cell.style.width = cell.style.height = `${size}px`;
   cell.clear = () => ctx.clearRect(0, 0, size, size);
