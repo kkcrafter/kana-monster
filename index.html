@@ -642,7 +642,16 @@ function speakable() {
   return null;
 }
 
+const UNDO_KEY = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘Z' : 'Ctrl+Z';
+
 document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key.toLowerCase() === 'z' || e.code === 'KeyZ')) {
+    if (screen !== 'write' || e.target.closest?.('input, textarea')) return;   // inputs keep their own undo
+    e.preventDefault();
+    undoCell();
+    return;
+  }
+
   // Space is always pronunciation — it never scrolls, toggles a checkbox or presses a button.
   if (e.key === ' ') {
     if (e.target.matches?.('input[type="text"]')) return;   // the romaji box; nothing to speak there anyway
@@ -873,7 +882,7 @@ function cellSize(n) {
 }
 
 // One canvas per kana, with a faint character behind it to trace over.
-function makeCell(ch, size) {
+function makeCell(ch, size, onInk) {
   const canvas = document.createElement('canvas');
   const dpr = window.devicePixelRatio || 1;
   canvas.width = size * dpr;
@@ -894,6 +903,8 @@ function makeCell(ch, size) {
   canvas.addEventListener('pointerdown', (e) => {
     drawing = true;
     wipe.hidden = false;
+    cell.inked = true;
+    onInk(cell);
     canvas.setPointerCapture(e.pointerId);
     ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
     ctx.beginPath();
@@ -920,15 +931,18 @@ function makeCell(ch, size) {
   }
   const cell = el('div', { className: 'cell' }, guide, canvas, wipe);
   cell.style.width = cell.style.height = `${size}px`;
-  cell.clear = () => { ctx.clearRect(0, 0, size, size); wipe.hidden = true; };
+  cell.inked = false;
+  cell.clear = () => { ctx.clearRect(0, 0, size, size); wipe.hidden = true; cell.inked = false; };
   return cell;
 }
 
 function askWrite(name) {
   const chars = [...name.ja].filter(isKana);
   const size = cellSize(chars.length);
-  const cells = chars.map(ch => makeCell(ch, size));
-  writing = { name, cells, grid: el('div', { id: 'cells' }, ...cells) };
+  const order = [];   // cells by most recent stroke, latest last — what ⌘Z / Ctrl+Z walks back through
+  const touched = (cell) => { const i = order.indexOf(cell); if (i >= 0) order.splice(i, 1); order.push(cell); };
+  const cells = chars.map(ch => makeCell(ch, size, touched));
+  writing = { name, cells, order, grid: el('div', { id: 'cells' }, ...cells) };
   renderWrite();
 }
 
@@ -939,7 +953,7 @@ function renderWrite() {
   screen = 'write';
   grid.classList.toggle('noguide', !showGuide);
   grid.classList.toggle('nonums', !showNums);
-  for (const b of grid.querySelectorAll('.cell-clear')) { b.title = S.clearOne; b.setAttribute('aria-label', S.clearOne); }
+  for (const b of grid.querySelectorAll('.cell-clear')) { b.title = `${S.clearOne} (${UNDO_KEY})`; b.setAttribute('aria-label', S.clearOne); }
 
   app.replaceChildren(
     ...(showCue ? [spriteEl(current, '', 'cue')] : []),
@@ -951,6 +965,13 @@ function renderWrite() {
       el('button', { className: 'ghost', textContent: S.clear, onclick: () => cells.forEach(c => c.clear()) })
     )
   );
+}
+
+// Clear the most recently written character; cells already cleared another way are skipped.
+function undoCell() {
+  const { order } = writing;
+  while (order.length && !order.at(-1).inked) order.pop();
+  order.pop()?.clear();
 }
 
 function finishWrite(name) {
