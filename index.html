@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -250,20 +250,20 @@ const matches = (input, kana) => norm(input) === norm(toRomaji(kana));
 
 const I18N = {
   zh: {
-    name: '中', htmlLang: 'zh-Hant',
-    cue: '題目出圖', autospeak: '自動發聲',
-    stats: (a, b) => `${a} / ${b} 熟`,
+    name: '中', htmlLang: 'zh-TW',
+    cue: '題目顯示圖片', autospeak: '自動發音',
+    stats: (a, b) => `${a} / ${b} 已熟記`,
     kanaCount: (n) => `${n} 個假名`,
-    check: '答', skip: '唔記得', next: '下一個 ⏎', play: '🔊 聽',
-    correct: '啱', wrong: (a) => `錯：${a}`, skipped: '跳過',
+    check: '作答', skip: '不知道', next: '下一題 ⏎', play: '🔊 播放',
+    correct: '正確', wrong: (a) => `錯誤：${a}`, skipped: '已略過',
     loadFail: (m) => `載入失敗：${m}`, retry: '重試',
-    timeout: '連線逾時', noKana: '連續 8 張都冇片假名名', imgFail: '圖片載入失敗',
-    footer: '片假名 → 讀出 → 揭曉。圖同名 runtime 由 PokéAPI 取，本 repo 不含任何圖像。',
+    timeout: '連線逾時', noKana: '連續 8 張都沒有片假名名稱', imgFail: '圖片載入失敗',
+    footer: '看片假名 → 唸出來 → 揭曉答案。名稱與圖片於執行時從 PokéAPI 取得，本專案不含任何圖片。',
     gens: ['紅・綠', '金・銀', '紅寶石・藍寶石', '鑽石・珍珠', '黑・白', 'X・Y', '太陽・月亮', '劍・盾', '朱・紫'],
-    read: '讀', write: '寫',
+    read: '閱讀', write: '書寫',
     timer: '計時', sec: '秒', guide: '描紅',
     clear: '清除', done: '完成', timeUp: '時間到',
-    gotIt: '寫啱咗', missed: '寫錯', writeHint: '憑讀音寫出片假名',
+    gotIt: '寫對了', missed: '寫錯了', writeHint: '依讀音寫出片假名',
   },
   en: {
     name: 'EN', htmlLang: 'en',
