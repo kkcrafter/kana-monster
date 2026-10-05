@@ -246,16 +246,8 @@ function el(tag, props = {}, ...kids) {
   return node;
 }
 
-function showError(message) {
-  app.replaceChildren(
-    el('div', { style: 'text-align:center;color:var(--no)' }, S.loadFail(message)),
-    el('div', { className: 'row' }, el('button', { textContent: S.retry, onclick: askNext }))
-  );
-}
-
 let askToken = 0;
 
-// Bounded, not recursive: a deck with no usable katakana names must surface, not spin.
 async function askNext() {
   const token = ++askToken;   // a newer askNext (e.g. the user switched generation) wins
   asking = null;
@@ -264,34 +256,18 @@ async function askNext() {
   if (session.type === 'practice' && session.results.length >= session.queue.length) return endSession();
   session.at = session.results.length + 1;   // the question number the bar shows until the next card
   renderSessionBar();
-  app.replaceChildren(el('div', { id: 'kana', textContent: '…' }));
-  for (let tries = 0; tries < 8; tries++) {
-    const slot = session.results.length;
-    const id = session.type === 'practice' ? session.queue[slot] : pick(session.seen);
-    let name;
-    try {
-      name = await getName(id);
-    } catch (err) {
-      if (token === askToken) showError(err.name === 'TimeoutError' || err.name === 'AbortError' ? S.timeout : err.message);
-      return;
-    }
+  const id = session.type === 'practice' ? session.queue[session.results.length] : pick(session.seen);
+  const name = nameOf(id);
+  if (mode === 'write') {
+    // Load the stroke guides before showing the card, so the glyph doesn't visibly swap shape.
+    app.replaceChildren(el('div', { id: 'kana', textContent: '…' }));
+    const strokes = Promise.all([...name.ja].filter(isKana).map(getStrokes));
+    await Promise.race([strokes, new Promise(r => setTimeout(r, 2000))]);
     if (token !== askToken) return;
-    if (name.ja) {
-      if (mode === 'write') {
-        // Load the stroke guides before showing the card, so the glyph doesn't visibly swap shape.
-        const strokes = Promise.all([...name.ja].filter(isKana).map(getStrokes));
-        await Promise.race([strokes, new Promise(r => setTimeout(r, 2000))]);
-        if (token !== askToken) return;
-      }
-      current = id;
-      session.seen?.add(id);
-      return mode === 'write' ? askWrite(name) : ask(name);
-    }
-    // No katakana name on record: swap in another id so a practice set keeps its size.
-    if (session.type === 'practice') session.queue[slot] = pick(new Set(session.queue));
-    else session.seen.add(id);
   }
-  if (token === askToken) showError(S.noKana);
+  current = id;
+  session.seen?.add(id);
+  return mode === 'write' ? askWrite(name) : ask(name);
 }
 
 function ask(name, keep = '') {

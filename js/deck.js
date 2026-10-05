@@ -1,7 +1,6 @@
 // ---------- storage ----------
 
-// v2: v1 cached entries under the wrong language code and poisoned the deck
-const NAMES_KEY = 'kanamon.names.v2', PROGRESS_KEY = 'kanamon.progress';
+const PROGRESS_KEY = 'kanamon.progress';
 const CUE_KEY = 'kanamon.cue', SPEAK_KEY = 'kanamon.autospeak';
 const GENS_KEY = 'kanamon.gens', LANG_KEY = 'kanamon.lang';
 const MODE_KEY = 'kanamon.mode', GUIDE_KEY = 'kanamon.guide';
@@ -16,8 +15,8 @@ function save(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
-const names = load(NAMES_KEY, {});      // id -> {ja, en}
 const progress = load(PROGRESS_KEY, {}); // id -> Leitner box 1..5
+try { localStorage.removeItem('kanamon.names.v2'); } catch {}   // old per-name PokéAPI cache, now js/names.js
 
 // ---------- deck ----------
 
@@ -56,23 +55,12 @@ function pick(exclude = new Set()) {
   return pool[Math.random() * pool.length | 0];
 }
 
-const HAS_KATAKANA = /[゠-ヿ]/;
 // A writable katakana: excludes ・ and symbols like the ♀ in ニドラン♀; keeps ー.
 const isKana = (ch) => /[\u30A1-\u30FA\u30FC]/.test(ch);
 
-async function getName(id) {
-  if (names[id]) return names[id];
-  const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`, {
-    signal: AbortSignal.timeout(20000),
-  });
-  if (!res.ok) throw new Error(`PokéAPI ${res.status}`);
-  const data = await res.json();
-  const lang = (code) => data.names.find(n => n.language.name === code)?.name;
-  const ja = lang('ja-Hrkt') || lang('ja');   // the API has used both codes over time
-  // store null, not undefined, so the cache hit still short-circuits
-  names[id] = { ja: HAS_KATAKANA.test(ja || '') ? ja : null, en: lang('en') || null };
-  save(NAMES_KEY, names);
-  return names[id];
+function nameOf(id) {
+  const [ja, en] = NAMES[id - 1];
+  return { ja, en };
 }
 
 // Same files, different hosts — raw.githubusercontent.com is blocked on some networks.
