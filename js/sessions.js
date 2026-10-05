@@ -1,6 +1,31 @@
 // ---------- sessions ----------
 // Practice: a fixed set of N, untimed, ending in a summary with redo / new set.
 // Challenge: one countdown over the whole run, counting how many you get right.
+// askNext() puts up each card for whichever session is running.
+
+let askToken = 0;
+
+async function askNext() {
+  const token = ++askToken;   // a newer askNext (e.g. the user switched generation) wins
+  asking = null;
+  writing = null;
+  screen = 'loading';
+  if (session.type === 'practice' && session.results.length >= session.queue.length) return endSession();
+  session.at = session.results.length + 1;   // the question number the bar shows until the next card
+  renderSessionBar();
+  const id = session.type === 'practice' ? session.queue[session.results.length] : pick(session.seen);
+  const name = nameOf(id);
+  if (mode === 'write') {
+    // Load the stroke guides before showing the card, so the glyph doesn't visibly swap shape.
+    app.replaceChildren(el('div', { id: 'kana', textContent: '…' }));
+    const strokes = Promise.all([...name.ja].filter(isKana).map(getStrokes));
+    await Promise.race([strokes, new Promise(r => setTimeout(r, 2000))]);
+    if (token !== askToken) return;
+  }
+  current = id;
+  session.seen?.add(id);
+  return mode === 'write' ? askWrite(name) : ask(name);
+}
 
 let sessionTimerId = null;
 
