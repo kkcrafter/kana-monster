@@ -99,7 +99,7 @@ button:hover { opacity: .88; }
 #en { font-size: 14px; color: var(--muted); }
 .speak { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 14px; padding: 2px 6px; flex: none; }
 footer { font-size: 12px; color: var(--muted); max-width: 420px; text-align: center; }
-#tests { font: 13px/1.6 ui-monospace, monospace; max-width: 640px; white-space: pre-wrap; }
+footer a { color: inherit; }
 
 /* sessions */
 #row3 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -137,7 +137,15 @@ footer { font-size: 12px; color: var(--muted); max-width: 420px; text-align: cen
 
 /* write mode */
 #prompt { font-size: 30px; font-weight: 600; letter-spacing: .02em; text-align: center; }
-#cells { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+/* The writing band. Padding around the cells is part of the ink layer's zone: 10px above for the
+   dakuten numbers, 6px each side, 30px below for the per-cell clear buttons. */
+#cells {
+  position: relative; display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 38px 8px; padding: 10px 6px 30px; margin-top: -10px;
+}
+#cells.done { padding-bottom: 0; row-gap: 8px; }
+
 .cell {
   position: relative; flex: none;
   border: 1px solid var(--line); border-radius: 8px;
@@ -145,29 +153,29 @@ footer { font-size: 12px; color: var(--muted); max-width: 420px; text-align: cen
     repeating-linear-gradient(to bottom, var(--line) 0 4px, transparent 4px 9px) center / 1px 100% no-repeat,
     repeating-linear-gradient(to right, var(--line) 0 4px, transparent 4px 9px) center / 100% 1px no-repeat;
 }
+.cell canvas { position: absolute; inset: 0; }
+
+/* tracing guide: KanjiVG strokes, or the plain glyph while they load */
 .cell .guide {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   color: var(--guide); user-select: none; pointer-events: none;
 }
-#cells.noguide .guide { display: none; }
-#cells.nonums .strokes text { display: none; }
 .guide svg { width: 100%; height: 100%; overflow: visible; }
 .strokes path { fill: none; stroke: var(--guide); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
 .strokes text { fill: var(--muted); font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; }
-footer a { color: inherit; }
-.cell canvas { position: absolute; inset: 0; touch-action: none; }
+#cells.noguide .guide { display: none; }
+#cells.nonums .strokes text { display: none; }
+
 /* One transparent layer over the whole writing band takes all pointer input and carries the
    pen-tip cursor. Chromium on some Macs flickers any non-default cursor, even the built-in
    crosshair (Safari doesn't); re-applying it at every cell, gap and stroke-number edge made that
    worse, so the pointer is only ever over this one element. */
-#cells { position: relative; padding-top: 10px; padding-inline: 6px; margin-top: -10px; }
 .ink-layer {
   position: absolute; inset: 0; z-index: 2; touch-action: none;
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Ccircle cx='5' cy='5' r='3' fill='%23ff5248' stroke='white' stroke-width='1.2'/%3E%3C/svg%3E") 5 5, crosshair;
 }
-/* Below the cell, never over it: the top-right corner is where dakuten get written. */
-#cells { padding-bottom: 30px; row-gap: 38px; }
-#cells.done { padding-bottom: 0; row-gap: 8px; }
+
+/* Per-cell clear: below the cell, never over it, since the top-right corner is where dakuten go. */
 .cell-clear {
   position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
   z-index: 3;   /* above the ink layer */
