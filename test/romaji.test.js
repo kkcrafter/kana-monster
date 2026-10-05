@@ -24,6 +24,8 @@ const ACCEPT = [
   ['カプ・コケコ', 'kapu kokeko', 'kapukokeko', 'kapu-kokeko'],
   ['ポリゴン２', 'porigon2', 'porigon'],
   ['タイプ：ヌル', 'taipu:nuru', 'taipunuru'],
+  ['ニドラン♂', 'nidoran'],
+  ['ニドラン♀', 'nidoran'],
 ];
 
 const REJECT = [
@@ -37,4 +39,5 @@ const REJECT = [
 let n = 0;
 for (const [kana, ...inputs] of ACCEPT) for (const i of inputs) { n++; assert.ok(matches(i, kana), `should accept ${kana} "${i}" (${norm(toRomaji(kana))})`); }
 for (const [kana, ...inputs] of REJECT) for (const i of inputs) { n++; assert.ok(!matches(i, kana), `should reject ${kana} "${i}" (${norm(toRomaji(kana))})`); }
+for (const ja of ['ニドラン♂', 'ニドラン♀']) { n++; assert.strictEqual(toRomaji(ja), 'nidoran'); }
 console.log(`romaji: all ${n} checks pass`);

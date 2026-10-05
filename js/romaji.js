@@ -51,6 +51,7 @@ function toRomaji(kana) {
     let r, len;
     if (DIGRAPH[two]) { r = DIGRAPH[two]; len = 2; }
     else if (MONO[one]) { r = MONO[one]; len = 1; }
+    else if (one === '♀' || one === '♂') { r = ''; len = 1; }   // part of the name, not of how it's read
     else {
       // Pass symbols through, folding full-width ASCII (ポリゴン２, タイプ：ヌル) to plain.
       const c = one.codePointAt(0);

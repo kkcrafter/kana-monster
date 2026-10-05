@@ -83,7 +83,7 @@ function spriteEl(id, alt, className = '') {
 function speak(text) {
   if (!window.speechSynthesis) return;
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
+  const u = new SpeechSynthesisUtterance(text.replace(/[♀♂]/g, ''));   // ニドラン♂ would be read "…osu"
   u.lang = 'ja-JP';
   u.rate = 0.85;
   speechSynthesis.speak(u);
