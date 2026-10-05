@@ -27,9 +27,11 @@ Deploys as a static site anywhere; on Vercel the Vite preset needs no settings (
 | `src/components/WriteCard.tsx` | Writing card: prompt, tracing chips, self-rating |
 | `src/components/WriteGrid.tsx` | Canvas cells, the ink layer, per-cell clear, ⌘Z, stroke-order guides |
 | `src/components/Summary.tsx` | End of a set: score, review the missed names |
-| `src/components/ui.tsx` | Icons, key caps, segmented buttons, sprites |
+| `src/components/History.tsx` | Learning history: names by Leitner box with pixel icons, its own generation filter and jump menu, pick some to review |
+| `src/components/ui.tsx` | Icons, key caps, segmented buttons, sprites, the generation list |
 | `src/lib/romaji.ts` | Katakana → romaji, the forgiving answer check, which syllables a wrong answer missed |
 | `src/lib/deck.ts` | Generation filter, Leitner-weighted picking |
+| `src/lib/icons.ts` | Pixel icon URLs for the learning history, and preloading them |
 | `src/lib/strokes.ts` | KanjiVG stroke-order guides, fetched and cached |
 | `src/lib/useHotkeys.ts` | Enter / Space / Esc / ⌘Z for whichever screen is up |
 | `src/data/names.ts` | All 1025 Japanese + English names (generated) |

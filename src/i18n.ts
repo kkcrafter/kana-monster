@@ -5,13 +5,13 @@ const zh = {
   settings: '設定', done: '完成', home: '回首頁',
   // home
   homeTitle: '今天練什麼？', orPress: '或按',
-  learnedOf: (t: number) => `/ ${t} 已熟記`, gensSelected: (n: number) => `已選 ${n} 個世代`,
+  learnedOf: (t: number) => `/ ${t} 已熟記`,
   learned: '熟記', learning: '學習中', unseen: '未學',
   modeLabel: '模式', read: '閱讀', readDesc: '看片假名，打出讀音', write: '書寫', writeDesc: '看讀音，寫出片假名',
   methodLabel: '方式', practice: '練習', challenge: '挑戰',
   countTitle: '題數', countDesc: '固定一組，做完看結果', countUnit: '題',
   minsTitle: '時間', minsDesc: '限時內答對越多越好', minsUnit: '分鐘',
-  gensLabel: '世代', gensCount: (n: number) => `${n} 隻`,
+  gensLabel: '世代', gensCount: (n: number) => `${n} 隻`, gensPicked: (n: number) => `已選 ${n}`,
   gens: ['紅・綠', '金・銀', '紅寶石・藍寶石', '鑽石・珍珠', '黑・白', 'X・Y', '太陽・月亮', '劍・盾', '朱・紫'],
   startPractice: (n: number) => `開始練習 · ${n} 題`, startChallenge: (m: number) => `開始挑戰 · ${m} 分鐘`,
   less: '減少', more: '增加',
@@ -40,6 +40,12 @@ const zh = {
   attempted: (a: number) => `共作答 ${a} 題`,
   reviewCount: (n: number) => `需要複習 · ${n}`, tapToRetry: '點一下單獨再練', allCorrect: '全部答對！',
   reviewAll: (n: number) => `複習答錯的 ${n} 個`, redo: '重做這組', newSet: '換新題目', again: '再挑戰一次',
+  // learning history
+  historyTitle: '學習紀錄', historyStats: (seen: number, learned: number) => `練過 ${seen} · 熟記 ${learned}`,
+  all: '全部', weak: '要加強', search: '搜尋', searchHint: '片假名、romaji、英文名', selectAll: '全選', jumpTo: '跳到世代', unselectAll: '取消全選',
+  seenOf: (a: number, b: number) => `練過 ${a} / ${b}`, noMatch: '沒有符合的名字',
+  picked: (n: number) => `已選 ${n} 個`, nonePicked: '未選取：重溫整個分類', unpick: '清除',
+  reviewPicked: (n: number) => `重溫已選 ${n} 個`, reviewTab: (n: number) => `重溫全部 ${n} 個`,
 }
 
 export type Strings = typeof zh
@@ -49,13 +55,13 @@ const en: Strings = {
   name: 'English', htmlLang: 'en',
   settings: 'Settings', done: 'Done', home: 'Home',
   homeTitle: 'What shall we practise today?', orPress: 'or press',
-  learnedOf: (t: number) => `/ ${t} learned`, gensSelected: (n: number) => `${n} generation${n === 1 ? '' : 's'}`,
+  learnedOf: (t: number) => `/ ${t} learned`,
   learned: 'Learned', learning: 'Learning', unseen: 'New',
   modeLabel: 'Mode', read: 'Read', readDesc: 'See katakana, type the reading', write: 'Write', writeDesc: 'See the reading, write the katakana',
   methodLabel: 'Session', practice: 'Practice', challenge: 'Challenge',
   countTitle: 'Questions', countDesc: 'A fixed set, results at the end', countUnit: '',
   minsTitle: 'Time', minsDesc: 'As many right as you can', minsUnit: 'min',
-  gensLabel: 'Generations', gensCount: (n: number) => `${n} Pokémon`,
+  gensLabel: 'Generations', gensCount: (n: number) => `${n} Pokémon`, gensPicked: (n: number) => `${n} selected`,
   gens: ['Red & Blue', 'Gold & Silver', 'Ruby & Sapphire', 'Diamond & Pearl', 'Black & White', 'X & Y', 'Sun & Moon', 'Sword & Shield', 'Scarlet & Violet'],
   startPractice: (n: number) => `Start practice · ${n}`, startChallenge: (m: number) => `Start challenge · ${m} min`,
   less: 'Fewer', more: 'More',
@@ -81,19 +87,24 @@ const en: Strings = {
   attempted: (a: number) => `${a} attempted`,
   reviewCount: (n: number) => `To review · ${n}`, tapToRetry: 'Tap one to practise it', allCorrect: 'All correct!',
   reviewAll: (n: number) => `Review the ${n} missed`, redo: 'Redo this set', newSet: 'New set', again: 'Try again',
+  historyTitle: 'History', historyStats: (seen: number, learned: number) => `${seen} seen · ${learned} learned`,
+  all: 'All', weak: 'Needs work', search: 'Search', searchHint: 'Katakana, romaji or English', selectAll: 'Select all', jumpTo: 'Jump to generation', unselectAll: 'Deselect all',
+  seenOf: (a: number, b: number) => `${a} / ${b} seen`, noMatch: 'No matching names',
+  picked: (n: number) => `${n} selected`, nonePicked: 'None selected: review the whole tab', unpick: 'Clear',
+  reviewPicked: (n: number) => `Review ${n} selected`, reviewTab: (n: number) => `Review all ${n}`,
 }
 
 const ja: Strings = {
   name: '日本語', htmlLang: 'ja',
   settings: '設定', done: '完了', home: 'ホーム',
   homeTitle: '今日は何を練習する？', orPress: 'または',
-  learnedOf: (t: number) => `/ ${t} 習得`, gensSelected: (n: number) => `${n}世代を選択`,
+  learnedOf: (t: number) => `/ ${t} 習得`,
   learned: '習得', learning: '学習中', unseen: '未学習',
   modeLabel: 'モード', read: '読み', readDesc: '片仮名を見て読みを入力', write: '書き', writeDesc: '読みを見て片仮名を書く',
   methodLabel: '方式', practice: '練習', challenge: 'チャレンジ',
   countTitle: '問題数', countDesc: '決まった数を解いて結果を見る', countUnit: '問',
   minsTitle: '時間', minsDesc: '時間内にできるだけ正解', minsUnit: '分',
-  gensLabel: '世代', gensCount: (n: number) => `${n}匹`,
+  gensLabel: '世代', gensCount: (n: number) => `${n}匹`, gensPicked: (n: number) => `${n}つ選択`,
   gens: ['赤・緑', '金・銀', 'ルビー・サファイア', 'ダイヤモンド・パール', 'ブラック・ホワイト', 'X・Y', 'サン・ムーン', 'ソード・シールド', 'スカーレット・バイオレット'],
   startPractice: (n: number) => `練習スタート・${n}問`, startChallenge: (m: number) => `チャレンジ開始・${m}分`,
   less: '減らす', more: '増やす',
@@ -119,6 +130,11 @@ const ja: Strings = {
   attempted: (a: number) => `${a}問に挑戦`,
   reviewCount: (n: number) => `復習 · ${n}`, tapToRetry: 'タップで個別に練習', allCorrect: '全問正解！',
   reviewAll: (n: number) => `間違えた${n}問を復習`, redo: 'もう一度', newSet: '新しい問題', again: 'もう一度挑戦',
+  historyTitle: '学習記録', historyStats: (seen: number, learned: number) => `学習済み ${seen}・習得 ${learned}`,
+  all: 'すべて', weak: '要復習', search: '検索', searchHint: '片仮名・ローマ字・英語名', selectAll: 'すべて選択', jumpTo: '世代へ移動', unselectAll: 'すべて解除',
+  seenOf: (a: number, b: number) => `学習済み ${a} / ${b}`, noMatch: '一致する名前がありません',
+  picked: (n: number) => `${n}匹を選択中`, nonePicked: '未選択：このタブをすべて復習', unpick: '解除',
+  reviewPicked: (n: number) => `選んだ${n}匹を復習`, reviewTab: (n: number) => `${n}匹すべて復習`,
 }
 
 export const I18N = { zh, en, ja }

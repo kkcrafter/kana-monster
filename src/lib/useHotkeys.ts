@@ -38,7 +38,7 @@ export function useHotkeys(keys: Hotkeys) {
 
       // Space is always pronunciation: it never scrolls, toggles a checkbox or presses a button.
       if (e.key === ' ') {
-        if (target.matches('input[type="text"]')) return   // the romaji box; nothing to speak there anyway
+        if (target.matches('input[type="text"], input[type="search"]')) return   // typing a space; nothing to speak there anyway
         e.preventDefault()
         if (target !== document.body) target.blur()   // keyup would otherwise activate the focused control
         const text = k.space?.()

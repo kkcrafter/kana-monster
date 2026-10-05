@@ -57,4 +57,12 @@ export function counts(ids: number[], progress: Progress) {
   return { learned, learning, unseen: ids.length - learned - learning }
 }
 
+/** whole percent of a generation's names in box 4 or 5 */
+export function learnedShare(progress: Progress, gen: number): number {
+  const [from, to] = GENS[gen - 1]
+  let learned = 0
+  for (let id = from; id <= to; id++) if (progress[id] >= 4) learned++
+  return Math.round(100 * learned / (to - from + 1))
+}
+
 export const nextBox = (box: number | undefined, correct: boolean) => (correct ? Math.min((box || 1) + 1, 5) : 1)

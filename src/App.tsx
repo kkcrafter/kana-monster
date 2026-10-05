@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AppContext, type App as AppState, type Mode, type SessionType } from './AppContext'
+import { History } from './components/History'
 import { Home } from './components/Home'
 import { Session } from './components/Session'
 import { SettingsSheet } from './components/SettingsSheet'
 import { I18N, type Lang } from './i18n'
 import { buildDeck, GENS, nextBox, type Progress } from './lib/deck'
+import { preloadIcons } from './lib/icons'
 import { stopSpeaking } from './lib/speech'
 import { KEYS } from './lib/storage'
 import { useStored } from './lib/useStored'
@@ -12,6 +14,8 @@ import { useStored } from './lib/useStored'
 const inRange = (lo: number, hi: number) => (v: unknown) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi
 const isBool = (v: unknown) => typeof v === 'boolean'
 const isGens = (v: unknown) => Array.isArray(v) && v.length > 0 && v.every(inRange(1, GENS.length))
+
+type View = { at: 'home' } | { at: 'history' } | { at: 'session'; queue?: number[] }
 
 export function App() {
   const [lang, setLang] = useStored<Lang>(KEYS.lang, 'zh', (v) => typeof v === 'string' && v in I18N)
@@ -26,12 +30,17 @@ export function App() {
   const [gens, setGens] = useStored<number[]>(KEYS.gens, [1], isGens)
   const [progress, setProgress] = useStored<Progress>(KEYS.progress, {})
   const [best, setBestMap] = useStored<Record<string, number>>(KEYS.best, {})
-  const [inSession, setInSession] = useState(false)
+  const [view, setView] = useState<View>({ at: 'home' })
   const settings = useRef<HTMLDialogElement>(null)
   const ids = useMemo(() => buildDeck(gens), [gens])
   const S = I18N[lang]
 
   useEffect(() => { document.documentElement.lang = S.htmlLang }, [S])
+  // after the first screen is up, so the icons don't compete with it
+  useEffect(() => {
+    const t = setTimeout(() => preloadIcons(ids), 1000)
+    return () => clearTimeout(t)
+  }, [ids])
 
   const app: AppState = {
     S, lang, setLang, mode, setMode, sessionType, setSessionType,
@@ -46,10 +55,16 @@ export function App() {
     openSettings: () => settings.current?.showModal(),
   }
 
-  const exit = () => { stopSpeaking(); setInSession(false) }
+  const home = () => setView({ at: 'home' })
+  const history = () => setView({ at: 'history' })
   return (
     <AppContext value={app}>
-      {inSession ? <Session onExit={exit} /> : <Home onStart={() => setInSession(true)} />}
+      {view.at === 'session'
+        // a review goes back to the history it was picked from
+        ? <Session queue={view.queue} onExit={() => { stopSpeaking(); if (view.queue) history(); else home() }} />
+        : view.at === 'history'
+          ? <History onBack={home} onReview={(queue) => setView({ at: 'session', queue })} />
+          : <Home onStart={() => setView({ at: 'session' })} onHistory={history} />}
       <SettingsSheet ref={settings} />
     </AppContext>
   )

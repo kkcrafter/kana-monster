@@ -38,11 +38,12 @@ interface State {
 
 let seq = 0
 
-export function Session({ onExit }: { onExit: () => void }) {
+/** queue: a fixed practice set (a review picked in the learning history) instead of the home settings */
+export function Session({ onExit, queue }: { onExit: () => void; queue?: number[] }) {
   const app = useApp()
   const { S, mode, ids, progress } = app
   const bestKey = `${mode}-${app.challengeMins}`
-  const [s, setS] = useState<State>(() => begin(app.sessionType))
+  const [s, setS] = useState<State>(() => (queue ? begin('practice', queue) : begin(app.sessionType)))
   const { run, phase, card } = s
 
   function begin(type: SessionType, queue?: number[], parent: Run | null = null): State {

@@ -1,16 +1,16 @@
 // Home: pick mode, session type and generations, then start.
 import { useApp, type Mode } from '../AppContext'
 import { I18N, type Lang } from '../i18n'
-import { counts, GENS } from '../lib/deck'
+import { counts } from '../lib/deck'
 import { useHotkeys } from '../lib/useHotkeys'
-import { Icon, Kbd, Seg } from './ui'
+import { GenList, Icon, Kbd, Seg } from './ui'
 
 const LANGS = Object.keys(I18N) as Lang[]
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
 
-export function Home({ onStart }: { onStart: () => void }) {
+export function Home({ onStart, onHistory }: { onStart: () => void; onHistory: () => void }) {
   const app = useApp()
-  const { S, ids, progress, gens } = app
+  const { S, ids, gens } = app
   const practice = app.sessionType === 'practice'
   useHotkeys({ enter: onStart })
 
@@ -63,28 +63,10 @@ export function Home({ onStart }: { onStart: () => void }) {
           </div>
         </section>
         <aside className="home-side">
-          <Stats />
+          <Stats onOpen={onHistory} />
           <section className="group gens-group">
             <div className="label-row"><h2 className="label">{S.gensLabel}</h2><span className="label-note">{S.gensCount(ids.length)}</span></div>
-            <div className="gens">
-              {GENS.map(([from, to], i) => {
-                const n = i + 1, size = to - from + 1
-                let learned = 0
-                for (let id = from; id <= to; id++) if (progress[id] >= 4) learned++
-                const share = Math.round(100 * learned / size)
-                return (
-                  <button key={n} className="gen" aria-pressed={gens.includes(n)} onClick={() => app.toggleGen(n)}>
-                    <span className="gen-box"><Icon name="check" size={12} width={3.2} /></span>
-                    <span className="gen-title"><b>{n}</b><span className="gen-name">
-                      {/* wrap only between words: after a space or a ・, never inside a title */}
-                      {S.gens[i].split(/(?<=[\s・])/).map((w, j) => <span key={j} className="nobr">{w}</span>)}
-                    </span></span>
-                    <span className="gen-bar"><span style={{ width: `${share}%` }} /></span>
-                    <span className="gen-pct">{share}%</span>
-                  </button>
-                )
-              })}
-            </div>
+            <GenList picked={gens} onToggle={app.toggleGen} />
           </section>
         </aside>
       </main>
@@ -107,24 +89,25 @@ function ModeCard({ mode }: { mode: Mode }) {
   )
 }
 
-function Stats() {
-  const { S, ids, progress, gens } = useApp()
+// The whole card opens the learning history.
+function Stats({ onOpen }: { onOpen: () => void }) {
+  const { S, ids, progress } = useApp()
   const total = ids.length, c = counts(ids, progress)
   const pct = (n: number) => `${(100 * n / total).toFixed(1)}%`
   const swatch = (kind: string, label: string, n: number) => <span><i className={`swatch ${kind}`} />{label} {n}</span>
   return (
-    <section className="panel stats">
-      <div className="stats-top">
-        <div className="stats-num"><b>{c.learned}</b><span>{S.learnedOf(total)}</span></div>
-        <span className="label-note">{S.gensSelected(gens.length)}</span>
-      </div>
-      <div className="meter">
+    <button className="panel stats" onClick={onOpen}>
+      <span className="stats-top">
+        <span className="stats-num"><b>{c.learned}</b><span>{S.learnedOf(total)}</span></span>
+        <span className="stats-link">{S.historyTitle}<Icon name="chevron" size={16} width={2.2} /></span>
+      </span>
+      <span className="meter">
         <span className="learned" style={{ width: pct(c.learned) }} />
         <span className="learning" style={{ width: pct(c.learning) }} />
-      </div>
-      <div className="legend">
+      </span>
+      <span className="legend">
         {swatch('learned', S.learned, c.learned)}{swatch('learning', S.learning, c.learning)}{swatch('unseen', S.unseen, c.unseen)}
-      </div>
-    </section>
+      </span>
+    </button>
   )
 }
