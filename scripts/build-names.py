@@ -1,4 +1,4 @@
-"""Regenerate js/names.js from PokéAPI's species-name table: python3 scripts/build-names.py"""
+"""Regenerate src/data/names.ts from PokéAPI's species-name table: npm run names"""
 import csv, io, json, urllib.request
 
 URL = 'https://cdn.jsdelivr.net/gh/PokeAPI/pokeapi@master/data/v2/csv/pokemon_species_names.csv'
@@ -15,10 +15,10 @@ for r in rows:
 table = [[n.get(JA_KANA) or n[JA], n[EN]] for _, n in sorted(names.items())]
 assert len(table) == LAST, len(table)
 
-with open('js/names.js', 'w', encoding='utf-8') as f:
+with open('src/data/names.ts', 'w', encoding='utf-8') as f:
     f.write('// Japanese (katakana) and English names, NAMES[dexNumber - 1].\n')
     f.write('// Generated from PokéAPI data by scripts/build-names.py; do not edit by hand.\n')
-    f.write('const NAMES = [\n')
+    f.write('export const NAMES: readonly (readonly [ja: string, en: string])[] = [\n')
     for ja, en in table:
         f.write(f'  {json.dumps([ja, en], ensure_ascii=False)},\n')
     f.write('];\n')
