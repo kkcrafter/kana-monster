@@ -75,7 +75,10 @@ export function Home({ onStart }: { onStart: () => void }) {
                 return (
                   <button key={n} className="gen" aria-pressed={gens.includes(n)} onClick={() => app.toggleGen(n)}>
                     <span className="gen-box"><Icon name="check" size={12} width={3.2} /></span>
-                    <span className="gen-title"><b>{n}</b><span className="gen-name">{S.gens[i]}</span></span>
+                    <span className="gen-title"><b>{n}</b><span className="gen-name">
+                      {/* wrap only between words: after a space or a ・, never inside a title */}
+                      {S.gens[i].split(/(?<=[\s・])/).map((w, j) => <span key={j} className="nobr">{w}</span>)}
+                    </span></span>
                     <span className="gen-bar"><span style={{ width: `${share}%` }} /></span>
                     <span className="gen-pct">{share}%</span>
                   </button>
