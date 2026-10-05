@@ -1,0 +1,185 @@
+:root {
+  --bg: #fbfaf7;
+  --fg: #1a1a1a;
+  --muted: #6b6b6b;
+  --card: #ffffff;
+  --line: #e3e0d8;
+  --ok: #1c7d4d;
+  --no: #b3352b;
+  --accent: #2b5eea;
+  --ink: #d42a20;
+  --guide: #cdc8bd;   /* trace template: darker than grid lines, lighter than ink */
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16171a; --fg: #eceae5; --muted: #9a9892;
+    --card: #202226; --line: #33363c;
+    --ok: #4ecb8b; --no: #ff7a6e; --accent: #7fa0ff;
+    --ink: #ff5248;
+    --guide: #4c5058;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }   /* author display rules otherwise beat the UA [hidden] style */
+body {
+  margin: 0; padding: 24px 16px 48px;
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  min-height: 100vh;
+}
+header { width: 100%; max-width: 420px; display: flex; justify-content: space-between; align-items: baseline; }
+h1 { font-size: 15px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin: 0; color: var(--muted); }
+#stats { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#controls {
+  width: 100%; max-width: 420px; display: flex; flex-direction: column;
+  gap: 10px; margin-top: -8px;
+}
+#gens { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  flex: none; display: flex; align-items: baseline; gap: 5px;
+  padding: 4px 10px; font-size: 12px; border-radius: 999px;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--line); cursor: pointer;
+}
+.chip b { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+#row2 { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+#langs { display: flex; gap: 4px; flex: none; }
+.lang {
+  flex: none; padding: 2px 8px; font-size: 12px; border-radius: 6px;
+  background: transparent; color: var(--muted); border: 1px solid var(--line); cursor: pointer;
+}
+.lang[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+#toggles { display: flex; gap: 14px; }
+#toggles label {
+  font-size: 13px; color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; gap: 5px; user-select: none; white-space: nowrap;
+}
+#toggles input {
+  width: auto; padding: 0; margin: 0; border: none; background: none;
+  accent-color: var(--accent); cursor: pointer;
+}
+@media (max-width: 400px) { #toggles { flex-direction: column; gap: 4px; } }
+main {
+  width: 100%; max-width: 420px; background: var(--card);
+  border: 1px solid var(--line); border-radius: 14px;
+  padding: 28px 20px; display: flex; flex-direction: column;
+  align-items: center; gap: 18px; min-height: 380px; justify-content: center;
+}
+#kana { font-size: 44px; font-weight: 600; letter-spacing: .04em; text-align: center; line-height: 1.2; }
+#hint { font-size: 13px; color: var(--muted); margin-top: -10px; }
+input {
+  width: 100%; padding: 12px 14px; font-size: 18px; text-align: center;
+  background: var(--bg); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 10px;
+  font-family: inherit;
+}
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.row { display: flex; gap: 8px; width: 100%; }
+button {
+  flex: 1; padding: 11px 14px; font-size: 15px; font-family: inherit;
+  background: var(--fg); color: var(--bg);
+  border: none; border-radius: 10px; cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+button:hover { opacity: .88; }
+#sprite { width: 180px; height: 180px; object-fit: contain; }
+#sprite.cue { width: 120px; height: 120px; }
+#sprite.noimg {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--line); border-radius: 12px;
+  color: var(--muted); font-size: 13px;
+}
+#verdict { font-size: 15px; font-weight: 600; }
+#verdict.ok { color: var(--ok); }
+#verdict.no { color: var(--no); }
+#answer { text-align: center; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+#romaji { font-size: 22px; font-weight: 600; letter-spacing: .02em; }
+#en { font-size: 14px; color: var(--muted); }
+.speak { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 14px; padding: 2px 6px; flex: none; }
+footer { font-size: 12px; color: var(--muted); max-width: 420px; text-align: center; }
+#tests { font: 13px/1.6 ui-monospace, monospace; max-width: 640px; white-space: pre-wrap; }
+
+/* sessions */
+#row3 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+#sessions, #modes { display: flex; gap: 4px; }
+#row3 label {
+  font-size: 13px; color: var(--muted);
+  display: flex; align-items: center; gap: 5px; white-space: nowrap;
+}
+#row3 input[type="number"] {
+  width: 56px; padding: 2px 6px; font-size: 13px; text-align: center;
+  border-radius: 6px; border: 1px solid var(--line);
+}
+#sessionbar {
+  width: 100%; max-width: 420px; margin: -6px 0 -12px;
+  display: flex; justify-content: space-between;
+  font: 600 13px/1.4 ui-monospace, monospace; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+#sessionbar .low { color: var(--no); }
+#intro { font-size: 17px; text-align: center; max-width: 300px; }
+#summary-head { font-size: 28px; font-weight: 700; text-align: center; line-height: 1.2; }
+#best { font-size: 13px; color: var(--muted); }
+#best.new { color: var(--ok); font-weight: 600; }
+#misses { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+#misses-title { font-size: 13px; color: var(--muted); }
+.miss {
+  flex: none; width: 100%; padding: 8px 12px;
+  display: flex; justify-content: space-between; align-items: baseline;
+  background: transparent; color: var(--fg); font-size: 16px; text-align: left;
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.miss span { color: var(--muted); font-size: 13px; }
+.miss span::after { content: '  ›'; color: var(--accent); font-size: 16px; }
+.miss:hover { border-color: var(--accent); opacity: 1; }
+
+/* write mode */
+#prompt { font-size: 30px; font-weight: 600; letter-spacing: .02em; text-align: center; }
+#cells { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.cell {
+  position: relative; flex: none;
+  border: 1px solid var(--line); border-radius: 8px;
+  background:
+    repeating-linear-gradient(to bottom, var(--line) 0 4px, transparent 4px 9px) center / 1px 100% no-repeat,
+    repeating-linear-gradient(to right, var(--line) 0 4px, transparent 4px 9px) center / 100% 1px no-repeat;
+}
+.cell .guide {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--guide); user-select: none; pointer-events: none;
+}
+#cells.noguide .guide { display: none; }
+#cells.nonums .strokes text { display: none; }
+.guide svg { width: 100%; height: 100%; overflow: visible; }
+.strokes path { fill: none; stroke: var(--guide); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.strokes text { fill: var(--muted); font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; }
+footer a { color: inherit; }
+.cell canvas { position: absolute; inset: 0; touch-action: none; }
+/* One transparent layer over the whole writing band takes all pointer input and carries the
+   pen-tip cursor. Chromium on some Macs flickers any non-default cursor, even the built-in
+   crosshair (Safari doesn't); re-applying it at every cell, gap and stroke-number edge made that
+   worse, so the pointer is only ever over this one element. */
+#cells { position: relative; padding-top: 10px; padding-inline: 6px; margin-top: -10px; }
+.ink-layer {
+  position: absolute; inset: 0; z-index: 2; touch-action: none;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Ccircle cx='5' cy='5' r='3' fill='%23ff5248' stroke='white' stroke-width='1.2'/%3E%3C/svg%3E") 5 5, crosshair;
+}
+/* Below the cell, never over it: the top-right corner is where dakuten get written. */
+#cells { padding-bottom: 30px; row-gap: 38px; }
+#cells.done { padding-bottom: 0; row-gap: 8px; }
+.cell-clear {
+  position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  z-index: 3;   /* above the ink layer */
+  flex: none; width: 24px; height: 24px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 1px solid var(--line);
+  background: var(--card); color: var(--muted);
+}
+.cell-clear svg { width: 14px; height: 14px; }
+@media (hover: hover) {
+  /* Leaving keeps the button visible and clickable for a moment before it fades. */
+  .cell-clear { opacity: 0; visibility: hidden; transition: opacity .15s .4s, visibility 0s .55s; }
+  .cell.hover .cell-clear, .cell-clear:hover, .cell-clear:focus-visible { opacity: 1; visibility: visible; transition: opacity .12s, visibility 0s; }
+}
+#cells.done .cell-clear { display: none !important; }   /* nothing left to fix once revealed */
