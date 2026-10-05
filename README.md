@@ -1,43 +1,43 @@
 # Kana Monster
 
-Learn katakana by reading and writing Pokémon names. A static web app: no build, no dependencies.
+Learn katakana by reading and writing Pokémon names. React + TypeScript, built with Vite.
 
 ## Run
 
-Open `index.html` in a browser (double-click works), or serve the folder:
-
 ```sh
-python3 -m http.server
+npm install
+npm run dev       # http://localhost:5173
+npm test          # romaji tests (Vitest)
+npm run lint      # oxlint
+npm run build     # type-check, then a static site in dist/
 ```
+
+Deploys as a static site anywhere; on Vercel the Vite preset needs no settings (output `dist`).
 
 ## Files
 
 | File | What it does |
 |---|---|
-| `index.html` | Markup, and the order the scripts load in |
-| `style.css` | All styles, light and dark |
-| `js/romaji.js` | Katakana → romaji, the forgiving answer check, and which syllables a wrong answer missed |
-| `js/i18n.js` | Interface text in 中文 (Taiwan) / English / 日本語 |
-| `js/names.js` | All 1025 Japanese + English names (generated) |
-| `js/deck.js` | Storage, generation filter, Leitner-weighted picking, sprites, speech |
-| `js/strokes.js` | KanjiVG stroke-order guides, fetched and cached |
-| `js/read.js` | Reading card: type the romaji, then the answer with a syllable-by-syllable comparison |
-| `js/write.js` | Writing card: tracing grid, ink layer, per-cell clear, ⌘Z, self-rating |
-| `js/sessions.js` | Practice sets, timed challenge, summary, progress bar and side panels |
-| `js/app.js` | Shared state, home screen, settings sheet, icons, keyboard shortcuts |
-
-The scripts are classic `<script>` files sharing globals, loaded in order. ES modules would be
-tidier, but Chrome refuses them from `file://`, and the app should open straight from disk.
-
-## Test
-
-```sh
-node test/romaji.test.js
-```
+| `src/App.tsx` | Saved settings and progress, shared with every screen through `AppContext` |
+| `src/i18n.ts` | Interface text in 中文 (Taiwan) / English / 日本語 |
+| `src/components/Home.tsx` | Home: mode, practice / challenge, generations, progress |
+| `src/components/SettingsSheet.tsx` | Language, image cue, auto audio, shortcuts, credits |
+| `src/components/Session.tsx` | A running set: progress bar or countdown, history and keys panels, which card is up |
+| `src/components/ReadCard.tsx` | Reading card: type the romaji, then the answer syllable by syllable |
+| `src/components/WriteCard.tsx` | Writing card: prompt, tracing chips, self-rating |
+| `src/components/WriteGrid.tsx` | Canvas cells, the ink layer, per-cell clear, ⌘Z, stroke-order guides |
+| `src/components/Summary.tsx` | End of a set: score, review the missed names |
+| `src/components/ui.tsx` | Icons, key caps, segmented buttons, sprites |
+| `src/lib/romaji.ts` | Katakana → romaji, the forgiving answer check, which syllables a wrong answer missed |
+| `src/lib/deck.ts` | Generation filter, Leitner-weighted picking |
+| `src/lib/strokes.ts` | KanjiVG stroke-order guides, fetched and cached |
+| `src/lib/useHotkeys.ts` | Enter / Space / Esc / ⌘Z for whichever screen is up |
+| `src/data/names.ts` | All 1025 Japanese + English names (generated) |
+| `src/styles.css` | All styles, light and dark, phone first with a two-column layout from 900px |
 
 ## Data
 
-- Names: [PokéAPI](https://pokeapi.co) data, regenerated with `python3 scripts/build-names.py`.
+- Names: [PokéAPI](https://pokeapi.co) data, regenerated with `npm run names`.
 - Sprites: loaded at runtime from PokéAPI's sprite repository; none are stored here.
 - Stroke order: [KanjiVG](https://kanjivg.tagaini.net), CC BY-SA 3.0, loaded at runtime.
 
