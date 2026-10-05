@@ -38,30 +38,72 @@ const MONO = {
   '・':' ',
 };
 
-function toRomaji(kana) {
-  let out = '', geminate = false;
+// One unit per syllable as it is read, with its romaji: ッ joins the next unit, ー the one before.
+// ♀/♂ are part of the name, not of how it's read, so they get no unit.
+function kanaUnits(kana) {
+  const units = [];
+  let geminate = '';
   for (let i = 0; i < kana.length; ) {
     const one = kana[i], two = kana.slice(i, i + 2);
-    if (one === 'ッ') { geminate = true; i++; continue; }
+    if (one === 'ッ') { geminate += one; i++; continue; }
     if (one === 'ー') {                       // long vowel: repeat the last one
-      const last = out.match(/[aiueo]$/);
-      if (last) out += last[0];
+      const last = units.at(-1);
+      if (last) {
+        last.kana += one;
+        const v = last.romaji.match(/[aiueo]$/);
+        if (v) last.romaji += v[0];
+      }
       i++; continue;
     }
-    let r, len;
-    if (DIGRAPH[two]) { r = DIGRAPH[two]; len = 2; }
-    else if (MONO[one]) { r = MONO[one]; len = 1; }
-    else if (one === '♀' || one === '♂') { r = ''; len = 1; }   // part of the name, not of how it's read
+    if (one === '♀' || one === '♂') { i++; continue; }
+    let k, r;
+    if (DIGRAPH[two]) { k = two; r = DIGRAPH[two]; }
+    else if (MONO[one] !== undefined) { k = one; r = MONO[one]; }
     else {
       // Pass symbols through, folding full-width ASCII (ポリゴン２, タイプ：ヌル) to plain.
       const c = one.codePointAt(0);
-      r = c >= 0xFF01 && c <= 0xFF5E ? String.fromCodePoint(c - 0xFEE0) : one;
-      len = 1;
+      k = one; r = c >= 0xFF01 && c <= 0xFF5E ? String.fromCodePoint(c - 0xFEE0) : one;
     }
-    if (geminate) { r = r[0] + r; geminate = false; }
-    out += r; i += len;
+    i += k.length;
+    if (geminate) { k = geminate + k; r = r[0] + r; geminate = ''; }
+    units.push({ kana: k, romaji: r });
   }
-  return out.replace(/([aiueo])\1{2,}/g, '$1$1');   // メェー would otherwise read "meee"
+  return units;
+}
+
+function toRomaji(kana) {
+  return kanaUnits(kana).map(u => u.romaji).join('')
+    .replace(/([aiueo])\1{2,}/g, '$1$1');   // メェー would otherwise read "meee"
+}
+
+// Where a wrong answer went wrong, unit by unit: a character-level edit-distance alignment of the
+// typed letters against the expected romaji, with each mismatch charged to the unit it falls in.
+// Returns the units (skipping the ・ separator) with what was typed for each and whether it matched.
+function diffAnswer(kana, answer) {
+  const units = kanaUnits(kana).filter(u => u.romaji.trim());
+  const want = units.map(u => u.romaji.toLowerCase().replace(/[^a-z]/g, ''));
+  const target = want.join(''), typed = answer.toLowerCase().replace(/[^a-z]/g, '');
+  const owner = want.flatMap((w, i) => [...w].map(() => i));   // unit index of each target letter
+  const n = target.length, m = typed.length;
+  const d = Array.from({ length: n + 1 }, (_, i) => Array.from({ length: m + 1 }, (_, j) => i + j));
+  for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) {
+    d[i][j] = Math.min(d[i - 1][j - 1] + (target[i - 1] === typed[j - 1] ? 0 : 1), d[i - 1][j] + 1, d[i][j - 1] + 1);
+  }
+  const got = units.map(() => ''), ok = want.map(w => true);
+  let i = n, j = m;
+  const charge = (u, letter) => { if (u == null) return; if (letter) got[u] = letter + got[u]; };
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && d[i][j] === d[i - 1][j - 1] + (target[i - 1] === typed[j - 1] ? 0 : 1)) {
+      if (target[i - 1] !== typed[j - 1]) ok[owner[i - 1]] = false;
+      charge(owner[i - 1], typed[j - 1]); i--; j--;
+    } else if (i > 0 && d[i][j] === d[i - 1][j] + 1) {          // expected letter missing
+      ok[owner[i - 1]] = false; i--;
+    } else {                                                     // extra letter typed
+      const u = i > 0 ? owner[i - 1] : 0;
+      ok[u] = false; charge(u, typed[j - 1]); j--;
+    }
+  }
+  return units.map((u, k) => ({ ...u, typed: got[k], ok: want[k] === '' || ok[k] }));
 }
 
 // Forgiving comparison: accept kunrei/wapuro spellings and any long-vowel writing.
@@ -79,4 +121,4 @@ function norm(s) {
 
 const matches = (input, kana) => norm(input) === norm(toRomaji(kana));
 
-if (typeof module === 'object') module.exports = { toRomaji, norm, matches };   // for test/romaji.test.js
+if (typeof module === 'object') module.exports = { toRomaji, norm, matches, kanaUnits, diffAnswer };   // for test/romaji.test.js
