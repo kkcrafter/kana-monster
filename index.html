@@ -8,37 +8,69 @@
 </head>
 <body>
 
-<header>
-  <h1>Kana Monster</h1>
-  <div id="stats"></div>
-</header>
-
-<div id="controls">
-  <div id="gens"></div>
-  <div id="row2">
-    <div id="row3">
-      <div id="sessions"></div>
-      <label id="count-wrap"><input type="number" id="count" min="1" max="200"> <span id="count-label"></span></label>
-      <label id="mins-wrap"><input type="number" id="mins" min="1" max="60"> <span id="mins-label"></span></label>
+<!-- Home: pick mode, session type and generations, then start -->
+<div id="home" class="view">
+  <header class="bar">
+    <div class="brand"><span class="logo" lang="ja">カ</span><span class="wordmark">KANA MONSTER</span></div>
+    <div class="bar-end">
+      <div class="seg lang-seg wide-only" id="lang-bar"></div>
+      <button class="icon-btn" id="open-settings"></button>
     </div>
-    <div id="langs"></div>
-  </div>
-  <div id="modes"></div>
-  <div id="toggles">
-    <label><input type="checkbox" id="cue"> <span id="cue-label"></span></label>
-    <label><input type="checkbox" id="autospeak"> <span id="speak-label"></span></label>
-    <label id="guide-wrap"><input type="checkbox" id="guide"> <span id="guide-label"></span></label>
-    <label id="nums-wrap"><input type="checkbox" id="nums"> <span id="nums-label"></span></label>
-  </div>
+  </header>
+  <main class="home">
+    <section class="home-main">
+      <h1 class="home-title wide-only" id="home-title"></h1>
+      <section class="group" id="mode-group">
+        <h2 class="label" id="mode-label"></h2>
+        <div class="modes" id="modes"></div>
+      </section>
+      <section class="group" id="method-group">
+        <h2 class="label" id="method-label"></h2>
+        <div class="method" id="method"></div>
+      </section>
+      <div class="start-row">
+        <button class="btn primary" id="start"></button>
+        <span class="or-press wide-only" id="or-press"></span>
+      </div>
+    </section>
+    <aside class="home-side">
+      <section class="panel stats" id="stats"></section>
+      <section class="group gens-group">
+        <div class="label-row"><h2 class="label" id="gens-label"></h2><span class="label-note" id="gens-count"></span></div>
+        <div class="gens" id="gens"></div>
+      </section>
+    </aside>
+  </main>
 </div>
 
-<div id="sessionbar"></div>
+<!-- A running practice set or challenge -->
+<div id="session" class="view" hidden>
+  <header class="bar session-bar">
+    <button class="exit" id="exit"></button>
+    <div class="track" id="track"></div>
+    <span class="count" id="count"></span>
+  </header>
+  <div class="subbar" id="subbar" hidden></div>
+  <main class="session">
+    <section class="card" id="app"></section>
+    <aside class="session-side wide-only">
+      <section class="panel" id="history"></section>
+      <section class="panel" id="keys"></section>
+    </aside>
+  </main>
+</div>
 
-<main id="app">
-  <div id="kana">…</div>
-</main>
-
-<footer id="footer"></footer>
+<dialog id="settings">
+  <div class="sheet-grip"></div>
+  <header class="sheet-head"><h2 id="settings-title"></h2><button class="link-btn" id="close-settings"></button></header>
+  <h3 class="label" id="lang-label"></h3>
+  <div class="seg lang-seg" id="lang-sheet"></div>
+  <label class="toggle-row"><span><b id="cue-label"></b><small id="cue-desc"></small></span><input type="checkbox" id="cue"></label>
+  <label class="toggle-row"><span><b id="speak-label"></b><small id="speak-desc"></small></span><input type="checkbox" id="autospeak"></label>
+  <h3 class="label" id="shortcuts-label"></h3>
+  <dl class="shortcuts" id="shortcuts"></dl>
+  <p class="credits" id="credits"></p>
+</dialog>
 
 <!-- Classic scripts sharing globals, loaded in this order, so the page also works opened from disk
      (file://), where Chrome refuses ES modules. -->

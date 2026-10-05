@@ -1,28 +1,12 @@
 // ---------- write mode ----------
 
-// Circular arrow (↺), drawn inline so it looks the same in every font.
-function resetIcon() {
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '2.4');
-  svg.setAttribute('stroke-linecap', 'round');
-  svg.setAttribute('stroke-linejoin', 'round');
-  svg.setAttribute('aria-hidden', 'true');
-  for (const d of ['M3.5 15a9 9 0 1 0 2.1-9.4L3 9', 'M3 3v6h6']) {
-    const p = document.createElementNS(NS, 'path');
-    p.setAttribute('d', d);
-    svg.append(p);
-  }
-  return svg;
-}
-
 // Fit one name on one row where possible; never below a finger-sized 48px.
 function cellSize(n) {
-  const room = app.clientWidth - 40 - 12 - (n - 1) * 8;   // main's side padding, the grid's own, gaps
-  return Math.max(48, Math.min(72, Math.floor(room / n)));
+  const cs = getComputedStyle(app);
+  const room = app.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+    - 12 - (n - 1) * 8;   // the grid's own side padding, gaps
+  const most = matchMedia('(min-width: 900px)').matches ? 96 : 76;   // the web layout has room for bigger cells
+  return Math.max(48, Math.min(most, Math.floor(room / n)));
 }
 
 // One canvas per kana, with a faint character behind it to trace over.
@@ -38,7 +22,7 @@ function makeCell(ch, size, onInk) {
   ctx.lineWidth = 4;
   ctx.lineCap = ctx.lineJoin = 'round';
 
-  const wipe = el('button', { className: 'cell-clear', hidden: true, onclick: () => cell.clear() }, resetIcon());
+  const wipe = el('button', { className: 'cell-clear', hidden: true, onclick: () => cell.clear() }, icon('undo', 14, 2.4));
   // Strokes arrive from the grid's ink layer, in client coordinates.
   const at = (e) => {
     const r = canvas.getBoundingClientRect();
@@ -116,18 +100,31 @@ function renderWrite() {
   screen = 'write';
   grid.classList.toggle('noguide', !showGuide);
   grid.classList.toggle('nonums', !showNums);
-  for (const b of grid.querySelectorAll('.cell-clear')) { b.title = `${S.clearOne} (${UNDO_KEY})`; b.setAttribute('aria-label', S.clearOne); }
+  for (const b of grid.querySelectorAll('.cell-clear')) { b.title = `${S.clearOne} (${UNDO_KEY})`; b.ariaLabel = S.clearOne; }
+  const chip = (on, label, flip) => {
+    const b = el('button', { className: 'chip', textContent: label, onclick: () => { flip(); renderWrite(); } });
+    b.setAttribute('aria-pressed', on);
+    return b;
+  };
 
   app.replaceChildren(
-    ...(showCue ? [spriteEl(current, '', 'cue')] : []),
-    el('div', { id: 'prompt', textContent: toRomaji(name.ja) }),
-    el('div', { id: 'hint', textContent: S.writeHint }),
-    grid,
-    el('div', { className: 'row' },
-      el('button', { textContent: S.done, onclick: () => finishWrite(name) }),
-      el('button', { className: 'ghost', textContent: S.clear, onclick: () => cells.forEach(c => c.clear()) })
-    )
-  );
+    el('div', { className: 'card-body center' },
+      ...(showCue ? [spriteEl(current, '', 'cue')] : []),
+      el('p', { className: 'prompt-label', textContent: S.writePrompt }),
+      el('div', { className: 'prompt-line' },
+        el('span', { className: 'romaji-prompt', textContent: toRomaji(name.ja) }),
+        el('button', { className: 'round', ariaLabel: S.play, onclick: () => speak(name.ja) }, icon('speaker', 18))),
+      el('p', { className: 'muted', textContent: S.writeCount(cells.length) }),
+      grid,
+      el('div', { className: 'chips' },
+        chip(showGuide, S.guide, () => save(GUIDE_KEY, showGuide = !showGuide)),
+        chip(showNums, S.numbers, () => save(NUMS_KEY, showNums = !showNums)),
+        el('button', { className: 'chip', onclick: undoCell }, icon('undo', 16, 2.4), S.undo, el('span', { className: 'chip-key', textContent: UNDO_KEY })))),
+    el('div', { className: 'card-actions' },
+      el('div', { className: 'row' },
+        el('button', { className: 'btn secondary', textContent: S.clearAll, onclick: () => cells.forEach(c => c.clear()) }),
+        el('button', { className: 'btn primary', onclick: () => finishWrite(name) }, S.done, kbd('⏎', true)))));
+  renderKeys();
 }
 
 // Clear the most recently written character; cells already cleared another way are skipped.
@@ -147,34 +144,23 @@ function finishWrite(name) {
 function showWriteAnswer(name) {
   asking = null;
   screen = 'writeAnswer';
-  shownWrite = { name };
   revealedAt = performance.now();
   writing.grid.classList.remove('noguide');   // the faint glyph under your strokes is the comparison
   writing.grid.classList.add('done');
-
-  const grade = (correct) => {
-    const box = progress[current] || 1;
-    progress[current] = correct ? Math.min(box + 1, 5) : 1;
-    save(PROGRESS_KEY, progress);
-    renderStats();
-    record(name, correct);
-    askNext();
-  };
+  const rate = (correct) => { if (screen !== 'writeAnswer') return; grade(name, correct); askNext(); };
+  shownWrite = { name, grade: rate };
 
   app.replaceChildren(
-    spriteEl(current, name.en || '', 'cue'),
-    el('div', { id: 'answer' },
-      el('div', { id: 'kana', style: 'font-size:34px', textContent: name.ja }),
-      el('div', { id: 'romaji', textContent: toRomaji(name.ja) }),
-      el('div', { id: 'en', textContent: name.en || '' })
-    ),
-    writing.grid,
-    el('div', { className: 'row' },
-      el('button', { textContent: S.gotIt, onclick: () => grade(true) }),
-      el('button', { className: 'ghost', textContent: S.missed, onclick: () => grade(false) })
-    ),
-    el('div', { className: 'row' },
-      el('button', { className: 'speak', textContent: S.play, onclick: () => speak(name.ja) })
-    )
-  );
+    el('div', { className: 'card-body center' },
+      spriteEl(current, name.en || '', 'art'),
+      writing.grid,
+      el('div', { className: 'answer-name' },
+        el('span', { className: 'romaji-big', textContent: toRomaji(name.ja) }),
+        el('span', { className: 'muted', textContent: name.en || '' })),
+      playButton(name.ja)),
+    el('div', { className: 'card-actions' },
+      el('div', { className: 'row' },
+        el('button', { className: 'btn secondary', textContent: S.missed, onclick: () => rate(false) }),
+        el('button', { className: 'btn primary', onclick: () => rate(true) }, S.gotIt, kbd('⏎', true)))));
+  renderKeys();
 }

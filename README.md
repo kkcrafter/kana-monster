@@ -16,15 +16,15 @@ python3 -m http.server
 |---|---|
 | `index.html` | Markup, and the order the scripts load in |
 | `style.css` | All styles, light and dark |
-| `js/romaji.js` | Katakana → romaji, and the forgiving answer check |
+| `js/romaji.js` | Katakana → romaji, the forgiving answer check, and which syllables a wrong answer missed |
 | `js/i18n.js` | Interface text in 中文 (Taiwan) / English / 日本語 |
 | `js/names.js` | All 1025 Japanese + English names (generated) |
 | `js/deck.js` | Storage, generation filter, Leitner-weighted picking, sprites, speech |
 | `js/strokes.js` | KanjiVG stroke-order guides, fetched and cached |
-| `js/read.js` | Reading card: type the romaji, reveal |
-| `js/write.js` | Writing card: tracing grid, ink layer, per-cell clear, ⌘Z |
-| `js/sessions.js` | Practice sets, timed challenge, summary, putting up each card |
-| `js/app.js` | Shared state, settings bar, keyboard shortcuts, start-up |
+| `js/read.js` | Reading card: type the romaji, then the answer with a syllable-by-syllable comparison |
+| `js/write.js` | Writing card: tracing grid, ink layer, per-cell clear, ⌘Z, self-rating |
+| `js/sessions.js` | Practice sets, timed challenge, summary, progress bar and side panels |
+| `js/app.js` | Shared state, home screen, settings sheet, icons, keyboard shortcuts |
 
 The scripts are classic `<script>` files sharing globals, loaded in order. ES modules would be
 tidier, but Chrome refuses them from `file://`, and the app should open straight from disk.
