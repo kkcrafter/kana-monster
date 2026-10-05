@@ -82,9 +82,9 @@ h1, h2, h3, p { margin: 0; }
 /* On a phone the two columns dissolve into one ordered stack with the start button pinned below. */
 .home { display: flex; flex-direction: column; gap: 18px; padding: 8px 20px 0; flex: 1; }
 .home-main, .home-side { display: contents; }
-#stats { order: 1; }
-#mode-group { order: 2; }
-#method-group { order: 3; }
+.stats { order: 1; }
+.mode-group { order: 2; }
+.method-group { order: 3; }
 .gens-group { order: 4; }
 .start-row { order: 5; position: sticky; bottom: 0; margin: auto -20px 0; padding: 12px 20px 28px; border-top: 1px solid var(--line); background: var(--bg); display: flex; align-items: center; gap: 16px; }
 .or-press { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
@@ -163,12 +163,12 @@ h1, h2, h3, p { margin: 0; }
 .prompt-label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
 .kana-big { font-size: 60px; font-weight: 700; line-height: 1.15; margin: -10px 0; }
 .intro { font-size: 18px; font-weight: 600; max-width: 320px; }
-#answer-input { height: 56px; border-radius: 14px; border: 2px solid var(--fg); background: var(--surface); color: var(--fg); font: 22px var(--font); text-align: center; width: 100%; }
-#answer-input::placeholder { color: var(--muted); }
+.answer-input { height: 56px; border-radius: 14px; border: 2px solid var(--fg); background: var(--surface); color: var(--fg); font: 22px var(--font); text-align: center; width: 100%; }
+.answer-input::placeholder { color: var(--muted); }
 
-#sprite.cue { width: 120px; height: 120px; object-fit: contain; }
-#sprite.art { width: 120px; height: 120px; object-fit: contain; flex: none; }
-#sprite.noimg { display: flex; align-items: center; justify-content: center; border: 1px dashed var(--guide); border-radius: 16px; font-size: 12px; color: var(--muted); }
+.sprite.cue { width: 120px; height: 120px; object-fit: contain; }
+.sprite.art { width: 120px; height: 120px; object-fit: contain; flex: none; }
+.sprite.noimg { display: flex; align-items: center; justify-content: center; border: 1px dashed var(--guide); border-radius: 16px; font-size: 12px; color: var(--muted); }
 
 .banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; text-align: left; }
 .banner svg { flex: none; margin-top: 1px; }
@@ -228,11 +228,11 @@ h1, h2, h3, p { margin: 0; }
 
 /* The writing band. Padding around the cells is part of the ink layer's zone: 10px above for the
    dakuten numbers, 6px each side, 30px below for the per-cell clear buttons. */
-#cells {
+.cells {
   position: relative; display: flex; flex-wrap: wrap; justify-content: center;
   gap: 38px 8px; padding: 10px 6px 30px; margin: -10px 0 -18px;
 }
-#cells.done { padding-bottom: 0; row-gap: 8px; margin-bottom: 0; }
+.cells.done { padding-bottom: 0; row-gap: 8px; margin-bottom: 0; }
 
 .cell {
   position: relative; flex: none;
@@ -252,8 +252,8 @@ h1, h2, h3, p { margin: 0; }
 .guide svg { width: 100%; height: 100%; overflow: visible; }
 .strokes path { fill: none; stroke: var(--guide); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
 .strokes text { fill: var(--muted); font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; }
-#cells.noguide .guide { display: none; }
-#cells.nonums .strokes text { display: none; }
+.cells.noguide .guide { display: none; }
+.cells.nonums .strokes text { display: none; }
 
 /* One transparent layer over the whole writing band takes all pointer input and carries the
    pen-tip cursor. Chromium on some Macs flickers any non-default cursor, even the built-in
@@ -279,18 +279,18 @@ h1, h2, h3, p { margin: 0; }
   .cell-clear { opacity: 0; visibility: hidden; transition: opacity .15s .4s, visibility 0s .55s; }
   .cell.hover .cell-clear, .cell-clear:hover, .cell-clear:focus-visible { opacity: 1; visibility: visible; transition: opacity .12s, visibility 0s; }
 }
-#cells.done .cell-clear { display: none !important; }   /* nothing left to fix once revealed */
+.cells.done .cell-clear { display: none !important; }   /* nothing left to fix once revealed */
 
 /* ---------- settings sheet ---------- */
 
-dialog#settings {
+dialog.settings {
   margin: auto 0 0; width: 100%; max-width: 100%; max-height: 90vh; overflow: auto;
   border: none; border-radius: 24px 24px 0 0; padding: 8px 20px 28px;
   background: var(--surface); color: var(--fg);
   flex-direction: column; gap: 12px;
 }
-dialog#settings[open] { display: flex; }
-dialog#settings::backdrop { background: rgb(20 20 19 / .45); }
+dialog.settings[open] { display: flex; }
+dialog.settings::backdrop { background: rgb(20 20 19 / .45); }
 .sheet-grip { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 4px; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; }
 .sheet-head h2 { font-size: 18px; }
@@ -323,7 +323,7 @@ dialog#settings::backdrop { background: rgb(20 20 19 / .45); }
   .home-main { display: flex; flex-direction: column; gap: 24px; flex: 999 1 560px; min-width: 0; }
   .home-side { display: flex; flex-direction: column; gap: 16px; flex: 1 1 320px; min-width: 0; }
   .home-title { font-size: 32px; letter-spacing: .01em; }
-  #mode-label, #method-label { display: none; }   /* the web layout's heading says it already */
+  .home-main .label { display: none; }   /* the web layout's heading says it already */
   .modes { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
   .mode-card { padding: 20px; gap: 6px; }
   .mode-glyph { font-size: 28px; }
@@ -363,13 +363,13 @@ dialog#settings::backdrop { background: rgb(20 20 19 / .45); }
   .card-actions > .btn.primary { width: auto; min-width: 240px; padding: 0 32px; }
   .card-actions .row { justify-content: center; }
   .card-actions .row > .btn { flex: 0 1 220px; }
-  .card #answer-input, .card-actions > .label { max-width: 480px; align-self: center; }
+  .card .answer-input, .card-actions > .label { max-width: 480px; align-self: center; }
   .card-actions > .label { width: 100%; }
   .answer-main { flex-direction: row; flex-wrap: wrap; gap: 24px 32px; }
-  #sprite.art { width: 160px; height: 160px; }
+  .sprite.art { width: 160px; height: 160px; }
   .session-side { display: flex !important; flex-direction: column; gap: 16px; flex: 1 1 260px; min-width: 0; }
   .session-side .panel { border-radius: 18px; padding: 14px 18px; }
 
-  dialog#settings { margin: auto; width: 440px; border-radius: 20px; padding: 20px 24px 24px; }
+  dialog.settings { margin: auto; width: 440px; border-radius: 20px; padding: 20px 24px 24px; }
   .sheet-grip { display: none; }
 }
