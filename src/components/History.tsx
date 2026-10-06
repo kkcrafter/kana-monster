@@ -71,11 +71,23 @@ export function History({ saved, onBack, onReview }:
     }
     return next
   })
-  const toggle = (id: number) => setPicked((p) => {
-    const next = new Set(p)
-    if (!next.delete(id)) next.add(id)
-    return next
-  })
+  // Shift-click sets every name on screen from the last clicked one to this one as the last one is.
+  const anchor = useRef(0)
+  const toggle = (id: number, shift: boolean) => {
+    const from = shown.indexOf(anchor.current), to = shown.indexOf(id)
+    anchor.current = id
+    setPicked((p) => {
+      const next = new Set(p)
+      if (shift && from >= 0) {
+        const on = p.has(shown[from])
+        for (const x of shown.slice(Math.min(from, to), Math.max(from, to) + 1)) {
+          if (on) next.add(x)
+          else next.delete(x)
+        }
+      } else if (!next.delete(id)) next.add(id)
+      return next
+    })
+  }
 
   // keep at least one generation, as on the home screen
   const toggleGen = (n: number) => setGens(g => (g.includes(n) ? (g.length > 1 ? g.filter(x => x !== n) : g) : [...g, n].sort((a, b) => a - b)))
@@ -162,7 +174,7 @@ export function History({ saved, onBack, onReview }:
                   <i /><small>{S.seenOf(seen, size)}</small>
                 </h2>
                 <div className="dex-grid">
-                  {inGen.map(id => <DexTile key={id} id={id} on={picked.has(id)} onToggle={() => toggle(id)} />)}
+                  {inGen.map(id => <DexTile key={id} id={id} on={picked.has(id)} onToggle={shift => toggle(id, shift)} />)}
                 </div>
               </section>
             )) : <p className="empty">{S.noMatch}</p>}
@@ -195,14 +207,14 @@ export function History({ saved, onBack, onReview }:
   )
 }
 
-function DexTile({ id, on, onToggle }: { id: number; on: boolean; onToggle: () => void }) {
+function DexTile({ id, on, onToggle }: { id: number; on: boolean; onToggle: (shift: boolean) => void }) {
   const { S, progress } = useApp()
   const box = progress[id] ?? 0
   const level = levelOf(box)
   const seen = level !== 'unseen'
   const { ja } = nameOf(id)
   return (
-    <button className={`dex-tile ${level}`} aria-pressed={on} onClick={onToggle}
+    <button className={`dex-tile ${level}`} aria-pressed={on} onClick={e => onToggle(e.shiftKey)}
       aria-label={`${seen ? ja : `#${id}`} · ${S[level]}`}>
       <span className="dex-no">#{String(id).padStart(3, '0')}</span>
       {on && <span className="dex-tick"><Icon name="check" size={11} width={3.4} /></span>}
