@@ -25,6 +25,13 @@ export function History({ onBack, onReview }: { onBack: () => void; onReview: (q
   const [picked, setPicked] = useState<Set<number>>(() => new Set())
 
   useEffect(() => { scrollTo(0, 0) }, [])
+  // a back-to-top button once the page is a screen down
+  const [far, setFar] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setFar(scrollY > innerHeight)
+    addEventListener('scroll', onScroll, { passive: true })
+    return () => removeEventListener('scroll', onScroll)
+  }, [])
 
   const tally = useMemo(() => {
     const t = { all: ids.length, weak: 0, learning: 0, learned: 0, unseen: 0 }
@@ -159,6 +166,7 @@ export function History({ onBack, onReview }: { onBack: () => void; onReview: (q
         </div>
       </div>
       <div className="review-bar">
+        {far && <button className="to-top" aria-label={S.toTop} onClick={() => scrollTo({ top: 0, behavior: 'smooth' })}><Icon name="up" size={20} /></button>}
         <div className="review-row">
           <span className="review-info">
             {picked.size ? S.picked(picked.size) : S.nonePicked}

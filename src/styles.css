@@ -296,6 +296,8 @@ button.stats:hover { border-color: var(--fg); }
 :root:has(dialog[open]) :is(.dex-section, .review-bar) { view-transition-name: none !important; }
 
 .review-bar { position: sticky; bottom: 0; padding: 10px 20px 28px; border-top: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; gap: 8px; }
+/* sits just above the review bar, whatever its height */
+.to-top { position: absolute; right: 20px; bottom: calc(100% + 12px); width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgb(0 0 0 / .15); }
 .review-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .review-info { min-width: 0; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
 .review-info .link-btn { font-size: 13px; }
