@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AppContext, type App as AppState, type Mode, type SessionType } from './AppContext'
-import { History } from './components/History'
+import { History, type HistoryState } from './components/History'
 import { Home } from './components/Home'
 import { Session } from './components/Session'
 import { SettingsSheet } from './components/SettingsSheet'
@@ -15,7 +15,7 @@ const inRange = (lo: number, hi: number) => (v: unknown) => Number.isInteger(v) 
 const isBool = (v: unknown) => typeof v === 'boolean'
 const isGens = (v: unknown) => Array.isArray(v) && v.length > 0 && v.every(inRange(1, GENS.length))
 
-type View = { at: 'home' } | { at: 'history' } | { at: 'session'; queue?: number[] }
+type View = { at: 'home' } | { at: 'history'; saved?: HistoryState } | { at: 'session'; queue?: number[]; from?: HistoryState }
 
 export function App() {
   const [lang, setLang] = useStored<Lang>(KEYS.lang, 'zh', (v) => typeof v === 'string' && v in I18N)
@@ -60,10 +60,10 @@ export function App() {
   return (
     <AppContext value={app}>
       {view.at === 'session'
-        // a review goes back to the history it was picked from
-        ? <Session queue={view.queue} onExit={() => { stopSpeaking(); if (view.queue) history(); else home() }} />
+        // a review goes back to the history it was picked from, as it was left
+        ? <Session queue={view.queue} onExit={() => { stopSpeaking(); setView(view.from ? { at: 'history', saved: view.from } : { at: 'home' }) }} />
         : view.at === 'history'
-          ? <History onBack={home} onReview={(queue) => setView({ at: 'session', queue })} />
+          ? <History saved={view.saved} onBack={home} onReview={(queue, from) => setView({ at: 'session', queue, from })} />
           : <Home onStart={() => setView({ at: 'session' })} onHistory={history} />}
       <SettingsSheet ref={settings} />
     </AppContext>

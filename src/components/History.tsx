@@ -14,17 +14,21 @@ const TABS: Tab[] = ['all', 'weak', 'learning', 'learned']
 // Box 1 is only reached by a wrong answer (a first right answer goes straight to 2): "missed last time".
 const levelOf = (box?: number): Level => (!box ? 'unseen' : box === 1 ? 'weak' : box < 4 ? 'learning' : 'learned')
 
-export function History({ onBack, onReview }: { onBack: () => void; onReview: (queue: number[]) => void }) {
+/** The page as it was left for a review, to come back to it. */
+export type HistoryState = { gens: number[]; tab: Tab; query: string; picked: Set<number>; y: number }
+
+export function History({ saved, onBack, onReview }:
+  { saved?: HistoryState; onBack: () => void; onReview: (queue: number[], state: HistoryState) => void }) {
   const app = useApp()
   const { S, progress } = app
   // Starts from the home selection; changing it here leaves the practice deck alone.
-  const [gens, setGens] = useState(app.gens)
+  const [gens, setGens] = useState(saved?.gens ?? app.gens)
   const ids = useMemo(() => buildDeck(gens), [gens])
-  const [tab, setTab] = useState<Tab>('all')
-  const [query, setQuery] = useState('')
-  const [picked, setPicked] = useState<Set<number>>(() => new Set())
+  const [tab, setTab] = useState<Tab>(saved?.tab ?? 'all')
+  const [query, setQuery] = useState(saved?.query ?? '')
+  const [picked, setPicked] = useState<Set<number>>(() => saved?.picked ?? new Set())
 
-  useEffect(() => { scrollTo(0, 0) }, [])
+  useEffect(() => { scrollTo(0, saved?.y ?? 0) }, [saved])
   // a back-to-top button once the page is a screen down
   const [far, setFar] = useState(false)
   useEffect(() => {
@@ -56,7 +60,7 @@ export function History({ onBack, onReview }: { onBack: () => void; onReview: (q
 
   // Nothing picked: the whole tab as filtered.
   const queue = picked.size ? [...picked] : shown
-  const review = () => { if (queue.length) onReview(shuffle(queue)) }
+  const review = () => { if (queue.length) onReview(shuffle(queue), { gens, tab, query, picked, y: scrollY }) }
   // a second press undoes it, for the names on screen
   const allPicked = shown.length > 0 && shown.every(id => picked.has(id))
   const pickAll = () => setPicked((p) => {
