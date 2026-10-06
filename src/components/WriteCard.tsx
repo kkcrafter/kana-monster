@@ -5,7 +5,7 @@ import { useApp } from '../AppContext'
 import { nameOf } from '../lib/deck'
 import { isKana, toRomaji } from '../lib/romaji'
 import { speak } from '../lib/speech'
-import { UNDO_KEY, useHotkeys } from '../lib/useHotkeys'
+import { useHotkeys } from '../lib/useHotkeys'
 import { Icon, Kbd, PlayButton, Sprite } from './ui'
 import { WriteGrid, type GridHandle } from './WriteGrid'
 
@@ -66,8 +66,8 @@ export function WriteCard({ id, onReveal, onRate }: Props) {
           <div className="chips">
             {chip(showGuide, S.guide, () => setShowGuide(!showGuide))}
             {chip(showNums, S.numbers, () => setShowNums(!showNums))}
-            <button className="chip" onClick={() => grid.current?.undo()}>
-              <Icon name="undo" size={16} width={2.4} />{S.undo}<span className="chip-key">{UNDO_KEY}</span>
+            <button className="chip" onClick={() => grid.current?.clearAll()}>
+              <Icon name="trash" size={16} width={2.2} />{S.clearAll}
             </button>
           </div>
         )}
@@ -78,7 +78,6 @@ export function WriteCard({ id, onReveal, onRate }: Props) {
             <button className="btn secondary" onClick={() => rate(false)}>{S.missed}</button>
             <button className="btn primary" onClick={() => rate(true)}>{S.gotIt}<Kbd dark>⏎</Kbd></button>
           </> : <>
-            <button className="btn secondary" onClick={() => grid.current?.clearAll()}>{S.clearAll}</button>
             <button className="btn primary" onClick={finish}>{S.done}<Kbd dark>⏎</Kbd></button>
           </>}
         </div>

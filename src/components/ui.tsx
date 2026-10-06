@@ -17,6 +17,7 @@ const ICONS = {
   back: <path d="M15 6l-6 6 6 6" />,
   search: <><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" /></>,
   undo: <><path d="M3.5 15a9 9 0 1 0 2.1-9.4L3 9" /><path d="M3 3v6h6" /></>,
+  trash: <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13" />,
   wrong: <><circle cx="12" cy="12" r="9" /><path d="M9 9l6 6M15 9l-6 6" /></>,
   right: <><circle cx="12" cy="12" r="9" /><path d="M8 12.5l3 3 5-6" /></>,
   up: <path d="M12 19V5M6 11l6-6 6 6" />,
