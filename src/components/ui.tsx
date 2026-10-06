@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useApp } from '../AppContext'
 import { GENS, learnedShare } from '../lib/deck'
-import { ICON_HOSTS } from '../lib/icons'
+import { ICON_HOSTS, SPRITES_SHA } from '../lib/icons'
 import { speak } from '../lib/speech'
 
 // Inline stroke icons (24×24), so they take the text colour and need no files.
@@ -45,9 +45,9 @@ export function Seg<T extends string>({ options, value, onPick, label, className
 
 // Same files, different hosts — raw.githubusercontent.com is blocked on some networks.
 const SPRITE_HOSTS = [
-  (id: number) => `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/other/official-artwork/${id}.png`,
-  (id: number) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
-  (id: number) => `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@master/sprites/pokemon/${id}.png`,
+  (id: number) => `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@${SPRITES_SHA}/sprites/pokemon/other/official-artwork/${id}.png`,
+  (id: number) => `https://raw.githubusercontent.com/PokeAPI/sprites/${SPRITES_SHA}/sprites/pokemon/other/official-artwork/${id}.png`,
+  (id: number) => `https://cdn.jsdelivr.net/gh/PokeAPI/sprites@${SPRITES_SHA}/sprites/pokemon/${id}.png`,
 ]
 
 /** cue: shown with the question; art: shown with the answer. Mount with key={id} if the id can change. */

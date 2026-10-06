@@ -43,6 +43,11 @@ Deploys as a static site anywhere; on Vercel the Vite preset needs no settings (
 - Sprites: loaded at runtime from PokéAPI's sprite repository; none are stored here.
 - Stroke order: [KanjiVG](https://kanjivg.tagaini.net), CC BY-SA 3.0, loaded at runtime.
 
+Both are fetched from a pinned commit (`SPRITES_SHA` in `src/lib/icons.ts`, `KANJIVG_SHA` in
+`src/lib/strokes.ts`), so a change upstream can't swap what the app shows. To take newer files, bump
+the hash. The production build adds a Content-Security-Policy (`vite.config.ts`) that allows images and
+fetches from those two hosts only.
+
 Pokémon names and artwork are trademarks of Nintendo, Creatures Inc. and GAME FREAK inc.; this
 is an unofficial, non-commercial learning project.
 

@@ -5,12 +5,23 @@ import { KEYS, load, save } from './storage'
 /** paths in stroke order, and where each stroke's number goes (109×109 viewBox) */
 export interface Strokes { p: string[]; n: [number, number][] }
 
-const cache: Record<string, Strokes> = load(KEYS.strokes, {})
+/** A cached entry is only trusted in the shape we wrote it; anything else is fetched again. */
+export const isStrokes = (s: unknown): s is Strokes => {
+  const { p, n } = (s ?? {}) as Partial<Strokes>
+  return Array.isArray(p) && p.every(d => typeof d === 'string') &&
+    Array.isArray(n) && n.every(xy => Array.isArray(xy) && xy.length === 2 && xy.every(Number.isFinite))
+}
+
+const cache: Record<string, Strokes> = Object.fromEntries(
+  Object.entries(load<Record<string, unknown>>(KEYS.strokes, {})).filter(([, s]) => isStrokes(s)) as [string, Strokes][])
 const requests: Record<string, Promise<Strokes | null>> = {}
 
+// Pinned to one commit of KanjiVG, so a change upstream can't swap the strokes under us.
+const KANJIVG_SHA = '70a0b7ae0c18ceb5cb358274b029cce0234a43bc'
+
 const HOSTS = [
-  (hex: string) => `https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@master/kanji/${hex}.svg`,
-  (hex: string) => `https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji/${hex}.svg`,
+  (hex: string) => `https://cdn.jsdelivr.net/gh/KanjiVG/kanjivg@${KANJIVG_SHA}/kanji/${hex}.svg`,
+  (hex: string) => `https://raw.githubusercontent.com/KanjiVG/kanjivg/${KANJIVG_SHA}/kanji/${hex}.svg`,
 ]
 
 export const cachedStrokes = (ch: string): Strokes | undefined => cache[ch]
