@@ -45,3 +45,8 @@ Deploys as a static site anywhere; on Vercel the Vite preset needs no settings (
 
 Pokémon names and artwork are trademarks of Nintendo, Creatures Inc. and GAME FREAK inc.; this
 is an unofficial, non-commercial learning project.
+
+## License
+
+The code is [MIT](LICENSE). That covers this project's own code only: the names, artwork and
+stroke data above stay under their owners' terms.
