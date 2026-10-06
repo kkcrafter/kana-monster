@@ -12,5 +12,9 @@ export const ICON_HOSTS = [
 /** Warm the browser cache (the CDN allows 7 days), so the learning history opens with its icons in. */
 // ponytail: one request per name, up to 1025 tiny PNGs; a sprite sheet would mean shipping images
 export function preloadIcons(ids: number[]) {
-  for (const id of ids) new Image().src = ICON_HOSTS[0](id)
+  for (const id of ids) {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'   // the same request DexIcon makes, so it hits this cache
+    img.src = ICON_HOSTS[0](id)
+  }
 }

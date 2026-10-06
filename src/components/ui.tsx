@@ -1,5 +1,5 @@
 // Small shared pieces: icons, key caps, segmented buttons, sprites, the play button.
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useApp } from '../AppContext'
 import { GENS, learnedShare } from '../lib/deck'
 import { ICON_HOSTS } from '../lib/icons'
@@ -60,9 +60,50 @@ export function Sprite({ id, alt = '', kind }: { id: number; alt?: string; kind:
 /** The small pixel icon in the learning history; a silhouette until the name has been answered. */
 export function DexIcon({ id, seen }: { id: number; seen: boolean }) {
   const [attempt, setAttempt] = useState(0)
+  const canvas = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    if (attempt >= ICON_HOSTS.length) return
+    const img = new Image()
+    img.crossOrigin = 'anonymous'   // to read its pixels
+    img.onload = () => { if (canvas.current) drawIcon(canvas.current, img) }
+    img.onerror = () => setAttempt(attempt + 1)
+    img.src = ICON_HOSTS[attempt](id)
+  }, [id, attempt])
   if (attempt >= ICON_HOSTS.length) return <span className="dex-icon" />
-  return <img className={seen ? 'dex-icon' : 'dex-icon unseen'} src={ICON_HOSTS[attempt](id)} alt=""
-    onError={() => setAttempt(attempt + 1)} />
+  return <canvas ref={canvas} className={seen ? 'dex-icon' : 'dex-icon unseen'} />
+}
+
+// Box icons draw most first and middle forms in ~20px and final forms in ~40px of a 68×56 frame.
+// Grow the small ones to the geometric mean of their size and BIG, so a smaller name never
+// outgrows a bigger one, and leave the big ones as they are. Drawn centred in the frame.
+const FRAME = [68, 56], BIG = 38
+function drawIcon(c: HTMLCanvasElement, img: HTMLImageElement) {
+  const { naturalWidth: w, naturalHeight: h } = img
+  const scan = document.createElement('canvas')
+  scan.width = w
+  scan.height = h
+  const sx = scan.getContext('2d')!
+  sx.drawImage(img, 0, 0)
+  const alpha = sx.getImageData(0, 0, w, h).data
+  let x0 = w, y0 = h, x1 = -1, y1 = -1
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!alpha[(y * w + x) * 4 + 3]) continue
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y)
+    }
+  }
+  if (x1 < 0) return
+  // the 96×96 sprites (after #898) are drawn in pixels about twice a box icon's: halve them first
+  const base = w > FRAME[0] ? 0.5 : 1
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1, size = Math.max(bw, bh) * base
+  const k = Math.min(base * (size < BIG ? Math.sqrt(BIG / size) : 1), FRAME[0] / bw, FRAME[1] / bh)
+  const dpr = Math.ceil(devicePixelRatio || 1)   // draw at screen pixels, so the scaling stays sharp
+  c.width = FRAME[0] * dpr
+  c.height = FRAME[1] * dpr
+  const ctx = c.getContext('2d')!
+  ctx.imageSmoothingEnabled = false
+  ctx.scale(dpr, dpr)
+  ctx.drawImage(img, x0, y0, bw, bh, (FRAME[0] - bw * k) / 2, (FRAME[1] - bh * k) / 2, bw * k, bh * k)
 }
 
 /** Generation picker: tiles on a phone, a checklist on the web. Home, and the history's generation sheet. */
