@@ -1,5 +1,6 @@
 // Learning history: every name in some generations by Leitner box, to pick some and review them.
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useApp } from '../AppContext'
 import { buildDeck, GENS, learnedShare, nameOf, shuffle } from '../lib/deck'
 import { toRomaji } from '../lib/romaji'
@@ -67,10 +68,23 @@ export function History({ onBack, onReview }: { onBack: () => void; onReview: (q
 
   // keep at least one generation, as on the home screen
   const toggleGen = (n: number) => setGens(g => (g.includes(n) ? (g.length > 1 ? g.filter(x => x !== n) : g) : [...g, n].sort((a, b) => a - b)))
+  // Animate ticking a generation (the sections slide) and land on a heading: the added section,
+  // or, if the removed one was under the top of the screen, the one after it (or before).
+  const pickGen = (n: number) => {
+    const i = sections.findIndex(s => s.g === n)
+    const box = document.getElementById(`gen-${n}`)?.getBoundingClientRect()
+    const land = !gens.includes(n) ? n : box && box.top <= 0 && box.bottom > 0 ? (sections[i + 1] ?? sections[i - 1])?.g : undefined
+    const update = () => {
+      flushSync(() => toggleGen(n))
+      if (land) document.getElementById(`gen-${land}`)?.scrollIntoView({ block: 'start' })
+    }
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) update()
+    else document.startViewTransition(update)
+  }
   // jump to a generation's section, showing it first if it was filtered out
   const jumpTo = (n: number) => {
-    if (!gens.includes(n)) toggleGen(n)
-    setTimeout(() => document.getElementById(`gen-${n}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+    if (gens.includes(n)) document.getElementById(`gen-${n}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    else pickGen(n)
   }
   const sheet = useRef<HTMLDialogElement>(null)
   const multi = sections.length > 1
@@ -93,7 +107,7 @@ export function History({ onBack, onReview }: { onBack: () => void; onReview: (q
             return (
               <div key={n} className="gen-row">
                 <label className="gen-check">
-                  <input type="checkbox" aria-label={S.gens[i]} checked={gens.includes(n)} onChange={() => toggleGen(n)} />
+                  <input type="checkbox" aria-label={S.gens[i]} checked={gens.includes(n)} onChange={() => pickGen(n)} />
                 </label>
                 <button className="gen-jump" onClick={() => jumpTo(n)}>
                   <b>{n}</b><span className="gen-row-name">{S.gens[i]}</span>
@@ -125,7 +139,7 @@ export function History({ onBack, onReview }: { onBack: () => void; onReview: (q
           </div>
           <main className="dex">
             {sections.length ? sections.map(({ g, seen, size, inGen }) => (
-              <section key={g} id={`gen-${g}`} className="dex-section">
+              <section key={g} id={`gen-${g}`} className="dex-section" style={{ viewTransitionName: `gen-${g}` }}>
                 <h2 className={multi ? 'dex-head jumps' : 'dex-head'}>
                   <span className="dex-title">{g} · {S.gens[g - 1]}</span>
                   {/* phone: the sticky heading doubles as the jump menu */}
@@ -163,7 +177,7 @@ export function History({ onBack, onReview }: { onBack: () => void; onReview: (q
           <h2>{S.gensLabel} <small className="label-note">{S.gensPicked(gens.length)}</small></h2>
           <button className="link-btn" onClick={() => sheet.current?.close()}>{S.done}</button>
         </header>
-        <GenList picked={gens} onToggle={toggleGen} />
+        <GenList picked={gens} onToggle={pickGen} />
       </dialog>
     </div>
   )

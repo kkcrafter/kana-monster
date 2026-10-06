@@ -278,6 +278,23 @@ button.stats:hover { border-color: var(--fg); }
 .learned .dex-level { color: var(--ok); }
 .empty { padding: 40px 0; text-align: center; color: var(--muted); }
 
+/* Ticking a generation is a view transition (History.tsx): each section is named, so a removed
+   one fades out first, then the rest slide and an added one fades in. A section that stays shows
+   only its new picture: crossfading with its old one, or sliding over a fading one, leaves ghosts.
+   The sticky parts get names too, so the sections slide under them. */
+::view-transition { pointer-events: none; }   /* ticking the next box mid-animation still lands */
+::view-transition-group(*) { animation-duration: .5s; animation-delay: .15s; }
+::view-transition-old(*) { display: none; }
+::view-transition-new(*) { animation: none; }
+::view-transition-old(*):only-child { display: block; animation-duration: .15s; animation-delay: 0s; }
+::view-transition-new(*):only-child { animation: vt-in .2s .6s both; }
+@keyframes vt-in { from { opacity: 0; } }
+.review-bar { view-transition-name: review-bar; }
+.hist-gens { view-transition-name: hist-gens; }
+::view-transition-group(review-bar), ::view-transition-group(hist-gens) { z-index: 1; }   /* above an added section */
+/* Under the phone sheet the page just changes: named parts would draw over the sheet. */
+:root:has(dialog[open]) :is(.dex-section, .review-bar) { view-transition-name: none !important; }
+
 .review-bar { position: sticky; bottom: 0; padding: 10px 20px 28px; border-top: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; gap: 8px; }
 .review-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .review-info { min-width: 0; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
