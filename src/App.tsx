@@ -4,7 +4,7 @@ import { History, type HistoryState } from './components/History'
 import { Home } from './components/Home'
 import { Session } from './components/Session'
 import { SettingsSheet } from './components/SettingsSheet'
-import { I18N, type Lang } from './i18n'
+import { detectLang, I18N, type Lang } from './i18n'
 import { buildDeck, GENS, nextBox, type Progress } from './lib/deck'
 import { preloadIcons } from './lib/icons'
 import { stopSpeaking } from './lib/speech'
@@ -17,8 +17,10 @@ const isGens = (v: unknown) => Array.isArray(v) && v.length > 0 && v.every(inRan
 
 type View = { at: 'home' } | { at: 'history'; saved?: HistoryState } | { at: 'session'; queue?: number[]; from?: HistoryState }
 
+const FIRST_LANG = detectLang(navigator.languages ?? [], Intl.DateTimeFormat().resolvedOptions().timeZone)
+
 export function App() {
-  const [lang, setLang] = useStored<Lang>(KEYS.lang, 'zh', (v) => typeof v === 'string' && v in I18N)
+  const [lang, setLang] = useStored<Lang>(KEYS.lang, FIRST_LANG, (v) => typeof v === 'string' && v in I18N)
   const [mode, setMode] = useStored<Mode>(KEYS.mode, 'read', (v) => v === 'read' || v === 'write')
   const [sessionType, setSessionType] = useStored<SessionType>(KEYS.session, 'practice', (v) => v === 'practice' || v === 'challenge')
   const [practiceCount, setPracticeCount] = useStored<number>(KEYS.count, COUNT.min, inRange(COUNT.min, COUNT.max))

@@ -139,3 +139,21 @@ const ja: Strings = {
 
 export const I18N = { zh, en, ja }
 export type Lang = keyof typeof I18N
+
+// Canonical IANA names plus the old aliases some systems still report.
+const ZH_ZONES = ['Asia/Shanghai', 'Asia/Urumqi', 'Asia/Chongqing', 'Asia/Harbin', 'Asia/Kashgar', 'PRC',
+  'Asia/Taipei', 'ROC', 'Asia/Hong_Kong', 'Hongkong', 'Asia/Macau', 'Asia/Macao']
+const JA_ZONES = ['Asia/Tokyo', 'Japan']
+
+/** The language for a first visit, from the browser's language setting (region ignored: en-HK is
+ *  English). None of the app's languages listed: English. One: that one. Several, so the setting
+ *  contradicts itself: the time zone, standing in for where the device is, decides (China, Taiwan,
+ *  Hong Kong, Macau → Chinese; Japan → Japanese; elsewhere English), else the first one listed.
+ *  Nothing leaves the device, and a language picked in the app is stored and wins. */
+export function detectLang(languages: readonly string[], timeZone = ''): Lang {
+  const found = [...new Set(languages.map(tag => tag.toLowerCase().split('-')[0]))]
+    .filter((l): l is Lang => Object.hasOwn(I18N, l))
+  if (found.length <= 1) return found[0] ?? 'en'
+  const local: Lang = ZH_ZONES.includes(timeZone) ? 'zh' : JA_ZONES.includes(timeZone) ? 'ja' : 'en'
+  return found.includes(local) ? local : found[0]
+}
