@@ -99,10 +99,15 @@ export function Session({ onExit, queue }: { onExit: () => void; queue?: number[
 
   const right = run.results.filter(r => r.correct).length
   const top = app.best[bestKey]
-  const writeKeys = mode === 'write' && phase === 'card'
-  const keys: [string, string][] = writeKeys
-    ? [['⏎', s.revealed ? S.gotIt : S.keyWriteDone], [UNDO_KEY, S.keyUndo], ['Space', S.keySpace], ['Esc', S.keyEsc]]
-    : [['⏎', S.keyEnter], ['Space', S.keySpace], ['Esc', S.keyEsc]]
+  // Only the keys that work right now: Space would give a reading away before it's answered, and
+  // once a written answer is up there is nothing left for ⌘Z to clear.
+  const write = mode === 'write' && phase === 'card'
+  const keys: [string, string][] = [
+    ['⏎', write ? (s.revealed ? S.gotIt : S.keyWriteDone) : S.keyEnter],
+    ...(write && !s.revealed ? [[UNDO_KEY, S.keyUndo] as [string, string]] : []),
+    ...(write || s.revealed ? [['Space', S.keySpace] as [string, string]] : []),
+    ['Esc', S.keyEsc],
+  ]
 
   return (
     <div className="view">
@@ -131,7 +136,7 @@ export function Session({ onExit, queue }: { onExit: () => void; queue?: number[
             ? <div className="card-body center"><div className="kana-big muted">…</div></div>
             : mode === 'read'
               ? <ReadCard key={card.seq} id={card.id} challenge={run.type === 'challenge'}
-                  onAnswer={(correct, answer) => setS({ ...s, run: record(correct, answer) })}
+                  onAnswer={(correct, answer) => setS({ ...s, run: record(correct, answer), revealed: true })}
                   onNext={() => setS(ask(run))} />
               : <WriteCard key={card.seq} id={card.id}
                   onReveal={() => setS({ ...s, revealed: true })}
