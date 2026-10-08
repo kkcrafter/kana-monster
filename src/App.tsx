@@ -23,7 +23,7 @@ export function App() {
   const [sessionType, setSessionType] = useStored<SessionType>(KEYS.session, 'practice', (v) => v === 'practice' || v === 'challenge')
   const [practiceCount, setPracticeCount] = useStored(KEYS.count, 10, inRange(5, 100))
   const [challengeMins, setChallengeMins] = useStored(KEYS.mins, 1, inRange(1, 30))
-  const [showCue, setShowCue] = useStored(KEYS.cue, false, isBool)       // image as cue (easy) vs reveal-only
+  const [showCue, setShowCue] = useStored(KEYS.cue, true, isBool)        // image as cue (easy, the default) vs reveal-only
   const [autoSpeak, setAutoSpeak] = useStored(KEYS.speak, false, isBool) // the play button works either way
   const [showGuide, setShowGuide] = useStored(KEYS.guide, true, isBool)
   const [showNums, setShowNums] = useStored(KEYS.nums, true, isBool)
