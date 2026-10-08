@@ -3,6 +3,10 @@ import type { Lang, Strings } from './i18n'
 import type { Progress } from './lib/deck'
 
 export type Mode = 'read' | 'write'
+
+/** Practice set size and challenge length: the defaults are the minimums. */
+export const COUNT = { min: 5, max: 50, step: 5 } as const
+export const MINS = { min: 1, max: 10, step: 1 } as const
 export type SessionType = 'practice' | 'challenge'
 
 export interface App {

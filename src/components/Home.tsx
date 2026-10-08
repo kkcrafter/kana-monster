@@ -1,5 +1,5 @@
 // Home: pick mode, session type and generations, then start.
-import { useApp, type Mode } from '../AppContext'
+import { COUNT, MINS, useApp, type Mode } from '../AppContext'
 import { I18N, type Lang } from '../i18n'
 import { counts } from '../lib/deck'
 import { useHotkeys } from '../lib/useHotkeys'
@@ -14,9 +14,9 @@ export function Home({ onStart, onHistory }: { onStart: () => void; onHistory: (
   const practice = app.sessionType === 'practice'
   useHotkeys({ enter: onStart })
 
-  const step = (d: number) => practice
-    ? app.setPracticeCount(clamp(app.practiceCount + 5 * d, 5, 100))
-    : app.setChallengeMins(clamp(app.challengeMins + d, 1, 30))
+  const range = practice ? COUNT : MINS
+  const value = practice ? app.practiceCount : app.challengeMins
+  const step = (d: number) => (practice ? app.setPracticeCount : app.setChallengeMins)(clamp(value + range.step * d, range.min, range.max))
 
   return (
     <div className="view">
@@ -46,11 +46,11 @@ export function Home({ onStart, onHistory }: { onStart: () => void; onHistory: (
                   <small>{practice ? S.countDesc : S.minsDesc}</small>
                 </div>
                 <div className="stepper">
-                  <button className="step" aria-label={S.less} onClick={() => step(-1)}><Icon name="minus" size={18} width={2.2} /></button>
+                  <button className="step" aria-label={S.less} disabled={value <= range.min} onClick={() => step(-1)}><Icon name="minus" size={18} width={2.2} /></button>
                   <span className="step-value">
-                    {practice ? app.practiceCount : app.challengeMins}<small>{practice ? S.countUnit : S.minsUnit}</small>
+                    {value}<small>{practice ? S.countUnit : S.minsUnit}</small>
                   </span>
-                  <button className="step" aria-label={S.more} onClick={() => step(1)}><Icon name="plus" size={18} width={2.2} /></button>
+                  <button className="step" aria-label={S.more} disabled={value >= range.max} onClick={() => step(1)}><Icon name="plus" size={18} width={2.2} /></button>
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AppContext, type App as AppState, type Mode, type SessionType } from './AppContext'
+import { AppContext, COUNT, MINS, type App as AppState, type Mode, type SessionType } from './AppContext'
 import { History, type HistoryState } from './components/History'
 import { Home } from './components/Home'
 import { Session } from './components/Session'
@@ -21,8 +21,8 @@ export function App() {
   const [lang, setLang] = useStored<Lang>(KEYS.lang, 'zh', (v) => typeof v === 'string' && v in I18N)
   const [mode, setMode] = useStored<Mode>(KEYS.mode, 'read', (v) => v === 'read' || v === 'write')
   const [sessionType, setSessionType] = useStored<SessionType>(KEYS.session, 'practice', (v) => v === 'practice' || v === 'challenge')
-  const [practiceCount, setPracticeCount] = useStored(KEYS.count, 10, inRange(5, 100))
-  const [challengeMins, setChallengeMins] = useStored(KEYS.mins, 1, inRange(1, 30))
+  const [practiceCount, setPracticeCount] = useStored<number>(KEYS.count, COUNT.min, inRange(COUNT.min, COUNT.max))
+  const [challengeMins, setChallengeMins] = useStored<number>(KEYS.mins, MINS.min, inRange(MINS.min, MINS.max))
   const [showCue, setShowCue] = useStored(KEYS.cue, true, isBool)        // image as cue (easy, the default) vs reveal-only
   const [autoSpeak, setAutoSpeak] = useStored(KEYS.speak, false, isBool) // the play button works either way
   const [showGuide, setShowGuide] = useStored(KEYS.guide, true, isBool)
