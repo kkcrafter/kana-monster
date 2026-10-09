@@ -5,7 +5,7 @@ import { Home } from './components/Home'
 import { Session } from './components/Session'
 import { SettingsSheet } from './components/SettingsSheet'
 import { detectLang, I18N, type Lang } from './i18n'
-import { buildDeck, GENS, nextBox, type Progress } from './lib/deck'
+import { buildDeck, GENS, nextBox, type Progress, type Seen } from './lib/deck'
 import { preloadIcons } from './lib/icons'
 import { stopSpeaking } from './lib/speech'
 import { KEYS } from './lib/storage'
@@ -31,6 +31,7 @@ export function App() {
   const [showNums, setShowNums] = useStored(KEYS.nums, true, isBool)
   const [gens, setGens] = useStored<number[]>(KEYS.gens, [1], isGens)
   const [progress, setProgress] = useStored<Progress>(KEYS.progress, {})
+  const [seen, setSeen] = useStored<Seen>(KEYS.seen, {})
   const [best, setBestMap] = useStored<Record<string, number>>(KEYS.best, {})
   const [view, setView] = useState<View>({ at: 'home' })
   const settings = useRef<HTMLDialogElement>(null)
@@ -49,10 +50,13 @@ export function App() {
     practiceCount, setPracticeCount, challengeMins, setChallengeMins,
     showCue, setShowCue, showGuide, setShowGuide, showNums, setShowNums,
     autoSpeak, setAutoSpeak: (on) => { setAutoSpeak(on); if (!on) stopSpeaking() },
-    gens, ids, progress, best,
+    gens, ids, progress, seen, best,
     // keep at least one generation in the deck
     toggleGen: (n) => setGens(g => (g.includes(n) ? (g.length > 1 ? g.filter(x => x !== n) : g) : [...g, n].sort((a, b) => a - b))),
-    grade: (id, correct) => setProgress(p => ({ ...p, [id]: nextBox(p[id], correct) })),
+    grade: (id, correct) => {
+      setProgress(p => ({ ...p, [id]: nextBox(p[id], correct) }))
+      setSeen(s => ({ ...s, [id]: Date.now() }))
+    },
     setBest: (key, n) => setBestMap(b => ({ ...b, [key]: n })),
     openSettings: () => settings.current?.showModal(),
   }

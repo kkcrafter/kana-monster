@@ -2,6 +2,7 @@
 
 export const KEYS = {
   progress: 'kanamon.progress',
+  seen: 'kanamon.seen',
   lang: 'kanamon.lang',
   mode: 'kanamon.mode',
   session: 'kanamon.session',

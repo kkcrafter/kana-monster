@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 280" width="680" height="280" role="img" font-family="-apple-system, 'Hiragino Sans', 'Noto Sans JP', 'Segoe UI', sans-serif">
+  <title>One name moving between Leitner boxes</title>
+  <desc>ピカチュウ starts as a new name, is answered right three times and climbs to box 4, is missed the next day and drops to box 1, then climbs again.</desc>
+  <style>
+    .t { fill: #1a1a1a; font-size: 14px; font-weight: 600; }
+    .s { fill: #6b6b6b; font-size: 12px; }
+    .cap { opacity: 0; animation: cap 36s infinite both; }
+    #tok { animation: move 36s infinite both; }
+    @keyframes cap { 0% { opacity: 0 } 1%, 15.67% { opacity: 1 } 16.67%, 100% { opacity: 0 } }
+    @keyframes move {
+      0%, 13.67% { transform: translateX(18px) }
+      16.67%, 30.33% { transform: translateX(242px) }
+      33.33%, 47% { transform: translateX(354px) }
+      50%, 63.67% { transform: translateX(466px) }
+      66.67%, 80.33% { transform: translateX(130px) }
+      83.33%, 97% { transform: translateX(242px) }
+      100% { transform: translateX(18px) }
+    }
+  </style>
+  <rect width="680" height="280" rx="12" fill="#fbfaf7"/>
+
+  <g>
+    <rect x="10" y="60" width="100" height="120" rx="8" fill="#ffffff" stroke="#d6d2c8"/>
+    <text class="t" x="60" y="84" text-anchor="middle">New</text>
+    <text class="s" x="60" y="102" text-anchor="middle">never answered</text>
+    <rect x="122" y="60" width="100" height="120" rx="8" fill="#fdf2f0" stroke="#e8b4ad"/>
+    <text class="t" x="172" y="84" text-anchor="middle">Box 1</text>
+    <text class="s" x="172" y="102" text-anchor="middle">again: now</text>
+    <rect x="234" y="60" width="100" height="120" rx="8" fill="#ffffff" stroke="#d6d2c8"/>
+    <text class="t" x="284" y="84" text-anchor="middle">Box 2</text>
+    <text class="s" x="284" y="102" text-anchor="middle">in 3 min</text>
+    <rect x="346" y="60" width="100" height="120" rx="8" fill="#ffffff" stroke="#d6d2c8"/>
+    <text class="t" x="396" y="84" text-anchor="middle">Box 3</text>
+    <text class="s" x="396" y="102" text-anchor="middle">in 30 min</text>
+    <rect x="458" y="60" width="100" height="120" rx="8" fill="#eef6f1" stroke="#9fcbb0"/>
+    <text class="t" x="508" y="84" text-anchor="middle">Box 4</text>
+    <text class="s" x="508" y="102" text-anchor="middle">in 1 day</text>
+    <rect x="570" y="60" width="100" height="120" rx="8" fill="#eef6f1" stroke="#9fcbb0"/>
+    <text class="t" x="620" y="84" text-anchor="middle">Box 5</text>
+    <text class="s" x="620" y="102" text-anchor="middle">in 3 days</text>
+  </g>
+
+  <g id="tok">
+    <rect x="0" y="128" width="84" height="32" rx="8" fill="#1a1a1a"/>
+    <text x="42" y="149" text-anchor="middle" fill="#fbfaf7" font-size="14" lang="ja">ピカチュウ</text>
+  </g>
+
+  <g class="cap" style="animation-delay: 0s">
+    <text class="t" x="10" y="36">Minute 0</text>
+    <text class="s" x="10" y="216">A new name. When nothing is due, it is drawn with the new names.</text>
+  </g>
+  <g class="cap" style="animation-delay: 6s">
+    <text class="t" x="10" y="36">Minute 0 · <tspan fill="#1c7d4d">right</tspan></text>
+    <text class="s" x="10" y="216">First right answer: straight to box 2. Due again in 3 minutes, so in the next game.</text>
+  </g>
+  <g class="cap" style="animation-delay: 12s">
+    <text class="t" x="10" y="36">Minute 3 · <tspan fill="#1c7d4d">right</tspan></text>
+    <text class="s" x="10" y="216">Due, so it is asked first. Right: box 3, due again in 30 minutes, later the same sitting.</text>
+  </g>
+  <g class="cap" style="animation-delay: 18s">
+    <text class="t" x="10" y="36">Minute 33 · <tspan fill="#1c7d4d">right</tspan></text>
+    <text class="s" x="10" y="216">Right again: box 4, which counts as learned. Due tomorrow.</text>
+  </g>
+  <g class="cap" style="animation-delay: 24s">
+    <text class="t" x="10" y="36">Next day · <tspan fill="#b3352b">wrong</tspan></text>
+    <text class="s" x="10" y="216">Missed: back to box 1, due straight away.</text>
+  </g>
+  <g class="cap" style="animation-delay: 30s">
+    <text class="t" x="10" y="36">Next game · <tspan fill="#1c7d4d">right</tspan></text>
+    <text class="s" x="10" y="216">The most urgent name, so asked first. Right: box 2, in 3 minutes again.</text>
+  </g>
+
+  <text class="s" x="10" y="256">Each set asks: names due (longest overdue first) → new names → names due soonest.</text>
+</svg>

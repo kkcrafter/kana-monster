@@ -2,7 +2,7 @@
 // Challenge: one countdown over the whole run, counting how many you get right.
 import { useEffect, useState } from 'react'
 import { useApp, type SessionType } from '../AppContext'
-import { counts, drawSet, isNewBest, nameOf, pick } from '../lib/deck'
+import { counts, drawSet, isNewBest, nameOf, pick, shuffle } from '../lib/deck'
 import { toRomaji } from '../lib/romaji'
 import { UNDO_KEY, useHotkeys } from '../lib/useHotkeys'
 import { ReadCard } from './ReadCard'
@@ -39,14 +39,14 @@ let seq = 0
 /** queue: a fixed practice set (a review picked in the learning history) instead of the home settings */
 export function Session({ onExit, queue }: { onExit: () => void; queue?: number[] }) {
   const app = useApp()
-  const { S, mode, ids, progress } = app
+  const { S, mode, ids, progress, seen } = app
   const bestKey = `${mode}-${app.challengeMins}`
   const [s, setS] = useState<State>(() => (queue ? begin('practice', queue) : begin(app.sessionType)))
   const { run, phase, card } = s
 
   function begin(type: SessionType, queue?: number[], parent: Run | null = null): State {
     const next: Run = {
-      type, queue: type === 'practice' ? queue ?? drawSet(ids, progress, app.practiceCount) : [],
+      type, queue: type === 'practice' ? queue ?? shuffle(drawSet(ids, progress, seen, app.practiceCount)) : [],
       results: [], endsAt: 0, parent, newBest: false,
       startLearned: parent?.startLearned ?? counts(ids, progress).learned,
     }
@@ -55,7 +55,7 @@ export function Session({ onExit, queue }: { onExit: () => void; queue?: number[
 
   function ask(r: Run): State {
     if (r.type === 'practice' && r.results.length >= r.queue.length) return finish(r)
-    const id = r.type === 'practice' ? r.queue[r.results.length] : pick(ids, progress, new Set(r.results.map(x => x.id)))
+    const id = r.type === 'practice' ? r.queue[r.results.length] : pick(ids, progress, seen, new Set(r.results.map(x => x.id)))
     return { run: r, phase: 'card', card: { id, at: r.results.length, seq: ++seq }, revealed: false }
   }
 

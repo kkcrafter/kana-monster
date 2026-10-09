@@ -1,8 +1,10 @@
-// Which Pokémon are in play, and Leitner-weighted picking among them.
+// Which Pokémon are in play, and which of them are due: Leitner boxes with a review interval each.
 import { NAMES } from '../data/names'
 
 /** dex number → Leitner box 1..5 (absent = never answered) */
 export type Progress = Record<number, number>
+/** dex number → when it was last answered, ms since 1970 (absent on progress from before this was kept) */
+export type Seen = Record<number, number>
 
 export interface Name { ja: string; en: string }
 
@@ -24,23 +26,42 @@ export function buildDeck(gens: number[]): number[] {
   })
 }
 
-const WEIGHTS = [16, 8, 4, 2, 1]
+// ---------- spaced repetition ----------
+// Leitner boxes: right moves a name up a box (max 5), wrong sends it to box 1, and each box has an
+// interval before the name is due again. Due names are asked first, then new ones.
+// The rules, the reasons for the intervals and an animation: docs/spaced-repetition.md
 
-// Leitner-weighted draw, skipping ids already used this session (all of them once the deck runs out).
-// ponytail: rebuilds the weighted pool each draw — ~1000 ids at most, nobody will notice
-export function pick(ids: number[], progress: Progress, exclude: Set<number> = new Set()): number {
-  let pool = ids.filter(id => !exclude.has(id))
-  if (!pool.length) pool = ids
-  const weighted = pool.flatMap(id => Array<number>(WEIGHTS[(progress[id] || 1) - 1]).fill(id))
-  return weighted[Math.floor(Math.random() * weighted.length)]
+// In milliseconds, the unit of Date.now() and of `Seen`.
+const MINUTE = 60 * 1000
+const DAY = 24 * 60 * MINUTE
+/** How long after a name's last answer it is due again, by box: box 1 (missed) straight away. */
+export const INTERVALS = [0, 3 * MINUTE, 30 * MINUTE, DAY, 3 * DAY]
+
+/** When an answered name is due. Progress from before answers were timed counts as long overdue. */
+export const dueAt = (box: number, seen = 0) => seen + INTERVALS[box - 1]
+
+/** Up to n names, most urgent first: those due, longest overdue first; then names never answered, at
+ *  random; then those not due yet, soonest first (reviewing ahead once nothing else is left).
+ *  Drawn up front so "redo" can replay exactly the same questions. */
+// ponytail: sorts the whole deck per draw; ~1000 names at most, nobody will notice
+export function drawSet(ids: number[], progress: Progress, seen: Seen, n: number,
+  now = Date.now(), exclude: Set<number> = new Set()): number[] {
+  const due: number[] = [], fresh: number[] = [], ahead: number[] = []
+  for (const id of ids) {
+    if (exclude.has(id)) continue
+    const box = progress[id]
+    if (!box) fresh.push(id)
+    else (dueAt(box, seen[id]) <= now ? due : ahead).push(id)
+  }
+  const when = (id: number) => dueAt(progress[id], seen[id])
+  // shuffled first, so names due at the same moment come in a different order each time (sort is stable)
+  const soonest = (list: number[]) => shuffle(list).sort((a, b) => when(a) - when(b))
+  return [...soonest(due), ...shuffle(fresh), ...soonest(ahead)].slice(0, n)
 }
 
-// Drawn up front so "redo" can replay exactly the same questions.
-export function drawSet(ids: number[], progress: Progress, n: number): number[] {
-  const taken = new Set<number>()
-  while (taken.size < Math.min(n, ids.length)) taken.add(pick(ids, progress, taken))
-  return [...taken]
-}
+/** The next name for a challenge: the most urgent one not asked yet, any once all have been. */
+export const pick = (ids: number[], progress: Progress, seen: Seen, asked: Set<number>, now = Date.now()): number =>
+  drawSet(ids, progress, seen, 1, now, asked)[0] ?? drawSet(ids, progress, seen, 1, now)[0]
 
 export function shuffle<T>(list: readonly T[]): T[] {
   const a = [...list]

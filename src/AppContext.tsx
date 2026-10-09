@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { Lang, Strings } from './i18n'
-import type { Progress } from './lib/deck'
+import type { Progress, Seen } from './lib/deck'
 
 export type Mode = 'read' | 'write'
 
@@ -34,7 +34,9 @@ export interface App {
   /** dex numbers in the selected generations */
   ids: number[]
   progress: Progress
-  /** one answer: moves the name between Leitner boxes */
+  /** when each name was last answered, which with its box says when it is due */
+  seen: Seen
+  /** one answer: moves the name between Leitner boxes and restarts its interval */
   grade: (id: number, correct: boolean) => void
   /** `${mode}-${minutes}` → most correct in one challenge */
   best: Record<string, number>

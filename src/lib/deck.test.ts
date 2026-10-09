@@ -1,17 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildDeck, counts, drawSet, isNewBest, learnedShare, nextBox, pick, shuffle } from './deck'
+import { describe, expect, it } from 'vitest'
+import { buildDeck, counts, drawSet, dueAt, isNewBest, learnedShare, nextBox, pick, shuffle } from './deck'
 
-afterEach(() => { vi.restoreAllMocks() })
-
-// Walks Math.random over every slot of the weighted pool once, so a draw count is exact.
-function drawEverySlot(slots: number, draw: () => number) {
-  const seen: number[] = []
-  for (let i = 0; i < slots; i++) {
-    vi.spyOn(Math, 'random').mockReturnValueOnce(i / slots)
-    seen.push(draw())
-  }
-  return seen
-}
+const MINUTE = 60 * 1000
+const DAY = 24 * 60 * MINUTE
+const NOW = Date.UTC(2026, 9, 9)
+const ago = (days: number) => NOW - days * DAY
 
 describe('nextBox', () => {
   it('moves up one box per right answer, up to 5', () => {
@@ -25,31 +18,63 @@ describe('nextBox', () => {
   })
 })
 
-describe('pick', () => {
-  it('draws a box-1 name 16 times as often as a box-5 one', () => {
-    const seen = drawEverySlot(17, () => pick([1, 2], { 1: 1, 2: 5 }))
-    expect(seen.filter(id => id === 1)).toHaveLength(16)
-    expect(seen.filter(id => id === 2)).toHaveLength(1)
+describe('dueAt', () => {
+  it('is due straight away in box 1, then after 3 minutes, 30 minutes, 1 day and 3 days', () => {
+    expect([1, 2, 3, 4, 5].map(box => dueAt(box, NOW) - NOW)).toEqual([0, 3 * MINUTE, 30 * MINUTE, DAY, 3 * DAY])
   })
-  it('weighs an unseen name like box 1', () => {
-    const seen = drawEverySlot(32, () => pick([1, 2], { 2: 1 }))
-    expect(seen.filter(id => id === 1)).toHaveLength(16)
+  it('brings a name answered right every time back next game, later that hour, the next day, then in 3 days', () => {
+    let at = NOW
+    const due = [2, 3, 4, 5].map(box => (at = dueAt(box, at)) - NOW)
+    expect(due).toEqual([3 * MINUTE, 33 * MINUTE, 33 * MINUTE + DAY, 33 * MINUTE + 4 * DAY])
   })
-  it('skips excluded names, and draws from all once every name is excluded', () => {
-    for (let i = 0; i < 20; i++) expect(pick([1, 2, 3], {}, new Set([1, 2]))).toBe(3)
-    expect([1, 2]).toContain(pick([1, 2], {}, new Set([1, 2])))
+  it('counts progress from before answers were timed as long overdue', () => {
+    expect(dueAt(5)).toBeLessThan(NOW)
   })
 })
 
 describe('drawSet', () => {
-  it('draws n different names', () => {
-    const set = drawSet(buildDeck([1]), {}, 10)
-    expect(set).toHaveLength(10)
-    expect(new Set(set).size).toBe(10)
+  // 1: missed now (box 1, due now)   2: box 2 answered 3 days ago (overdue by ~3 days)
+  // 3: box 3 answered now (due in 30 minutes)   4: box 5 answered 30 days ago (overdue by 27 days)
+  // 5, 6: never answered   7: box 4 answered now (due in 1 day)
+  const ids = [1, 2, 3, 4, 5, 6, 7]
+  const progress = { 1: 1, 2: 2, 3: 3, 4: 5, 7: 4 }
+  const seen = { 1: NOW, 2: ago(3), 3: NOW, 4: ago(30), 7: NOW }
+
+  it('asks due names first, longest overdue first, then new names, then the ones due soonest', () => {
+    const set = drawSet(ids, progress, seen, 7, NOW)
+    expect(set.slice(0, 3)).toEqual([4, 2, 1])
+    expect(set.slice(3, 5).sort()).toEqual([5, 6])
+    expect(set.slice(5)).toEqual([3, 7])
   })
-  it('stops at the deck size instead of looping forever', () => {
-    expect(drawSet([1, 2, 3], {}, 50).sort()).toEqual([1, 2, 3])
-    expect(drawSet([], {}, 5)).toEqual([])
+  it('stops at n', () => {
+    expect(drawSet(ids, progress, seen, 2, NOW)).toEqual([4, 2])
+  })
+  it('keeps a name just answered right out until its interval is up', () => {
+    const one = { 9: 2 }
+    expect(drawSet([9, 10], one, { 9: NOW }, 1, NOW + 3 * MINUTE - 1)).toEqual([10])
+    expect(drawSet([9, 10], one, { 9: NOW }, 1, NOW + 3 * MINUTE)).toEqual([9])
+  })
+  it('treats untimed progress as due, weakest box first', () => {
+    expect(drawSet([1, 2, 3], { 1: 5, 2: 1, 3: 3 }, {}, 3, NOW)).toEqual([2, 3, 1])
+  })
+  it('draws different names, never more than the deck holds', () => {
+    const set = drawSet(buildDeck([1]), {}, {}, 10, NOW)
+    expect(new Set(set).size).toBe(10)
+    expect(drawSet([1, 2, 3], {}, {}, 50, NOW).sort()).toEqual([1, 2, 3])
+    expect(drawSet([], {}, {}, 5, NOW)).toEqual([])
+  })
+  it('skips names already excluded', () => {
+    expect(drawSet(ids, progress, seen, 7, NOW, new Set([4, 2]))[0]).toBe(1)
+  })
+})
+
+describe('pick', () => {
+  it('gives the most urgent name not asked yet', () => {
+    expect(pick([1, 2, 3], { 1: 2, 2: 1 }, { 1: ago(5), 2: NOW }, new Set(), NOW)).toBe(1)
+    expect(pick([1, 2, 3], { 1: 2, 2: 1 }, { 1: ago(5), 2: NOW }, new Set([1]), NOW)).toBe(2)
+  })
+  it('starts over once every name has been asked', () => {
+    expect([1, 2]).toContain(pick([1, 2], {}, {}, new Set([1, 2]), NOW))
   })
 })
 

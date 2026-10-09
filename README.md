@@ -30,7 +30,7 @@ Deploys as a static site anywhere; on Vercel the Vite preset needs no settings (
 | `src/components/History.tsx` | Learning history: names by Leitner box with pixel icons, its own generation filter and jump menu, pick some to review |
 | `src/components/ui.tsx` | Icons, key caps, segmented buttons, sprites, the generation list |
 | `src/lib/romaji.ts` | Katakana → romaji, the forgiving answer check, which syllables a wrong answer missed |
-| `src/lib/deck.ts` | Generation filter, Leitner-weighted picking, the challenge best-score rule |
+| `src/lib/deck.ts` | Generation filter, spaced repetition (how it works: [`docs/spaced-repetition.md`](docs/spaced-repetition.md)), the challenge best-score rule |
 | `src/lib/history.ts` | Learning history: which names a tab and search show, picking them |
 | `src/lib/icons.ts` | Pixel icon URLs for the learning history, and preloading them |
 | `src/lib/useHotkeys.ts` | Enter / Space / Esc / ⌘Z for whichever screen is up |
