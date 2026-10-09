@@ -4,7 +4,7 @@ const zh = {
   name: '中文', htmlLang: 'zh-TW',
   settings: '設定', done: '完成', home: '回首頁',
   // home
-  homeTitle: '今天練什麼？', orPress: '或按',
+  homeTitle: '今天練什麼？', tagline: '用寶可夢的名字學日文片假名', orPress: '或按',
   learnedOf: (t: number) => `/ ${t} 已熟記`,
   learned: '熟記', learning: '學習中', unseen: '未學',
   modeLabel: '模式', read: '閱讀', readDesc: '看片假名，打出讀音', write: '書寫', writeDesc: '看讀音，寫出片假名',
@@ -54,7 +54,7 @@ export type Strings = typeof zh
 const en: Strings = {
   name: 'English', htmlLang: 'en',
   settings: 'Settings', done: 'Done', home: 'Home',
-  homeTitle: 'What shall we practise today?', orPress: 'or press',
+  homeTitle: 'What shall we practise today?', tagline: 'Learn Japanese katakana through Pokémon names', orPress: 'or press',
   learnedOf: (t: number) => `/ ${t} learned`,
   learned: 'Learned', learning: 'Learning', unseen: 'New',
   modeLabel: 'Mode', read: 'Read', readDesc: 'See katakana, type the reading', write: 'Write', writeDesc: 'See the reading, write the katakana',
@@ -97,7 +97,7 @@ const en: Strings = {
 const ja: Strings = {
   name: '日本語', htmlLang: 'ja',
   settings: '設定', done: '完了', home: 'ホーム',
-  homeTitle: '今日は何を練習する？', orPress: 'または',
+  homeTitle: '今日は何を練習する？', tagline: 'ポケモンの名前でカタカナを覚えよう', orPress: 'または',
   learnedOf: (t: number) => `/ ${t} 習得`,
   learned: '習得', learning: '学習中', unseen: '未学習',
   modeLabel: 'モード', read: '読み', readDesc: '片仮名を見て読みを入力', write: '書き', writeDesc: '読みを見て片仮名を書く',
