@@ -1,5 +1,5 @@
-// The writing band: one canvas per kana over a tracing guide, and a single ink layer on top that
-// takes every pointer event and routes each stroke to the cell it starts in.
+// The writing band: one canvas per kana over a tracing guide. The band routes each stroke to the
+// cell it starts in; with a mouse a single ink layer on top takes every pointer event (see styles.css).
 import { useImperativeHandle, useLayoutEffect, useRef, useState, type PointerEvent, type Ref } from 'react'
 import { useApp } from '../AppContext'
 import { STROKES } from '../data/strokes'
@@ -103,7 +103,10 @@ export function WriteGrid({ chars, guide, nums, done, ref }: Props) {
   }
 
   return (
-    <div ref={band} className={`cells${guide ? '' : ' noguide'}${nums ? '' : ' nonums'}${done ? ' done' : ''}`}>
+    <div ref={band} className={`cells${guide ? '' : ' noguide'}${nums ? '' : ' nonums'}${done ? ' done' : ''}`}
+      onPointerDown={begin} onPointerMove={move}
+      onPointerUp={() => { active.current = -1 }} onPointerCancel={() => { active.current = -1 }}
+      onPointerLeave={() => { if (active.current < 0) setHover(-1) }}>
       {size > 0 && chars.map((ch, i) => (
         <div key={i} ref={(el) => { cells.current[i] = el }} className={i === hover ? 'cell hover' : 'cell'} style={{ width: size, height: size }}>
           <StrokeGuide ch={ch} size={size} />
@@ -113,9 +116,7 @@ export function WriteGrid({ chars, guide, nums, done, ref }: Props) {
           </button>
         </div>
       ))}
-      <div className="ink-layer" onPointerDown={begin} onPointerMove={move}
-        onPointerUp={() => { active.current = -1 }} onPointerCancel={() => { active.current = -1 }}
-        onPointerLeave={() => { if (active.current < 0) setHover(-1) }} />
+      <div className="ink-layer" />
     </div>
   )
 }
@@ -127,7 +128,8 @@ function StrokeGuide({ ch, size }: { ch: string; size: number }) {
   if (!strokes) return <div className="guide" style={{ fontSize: Math.round(size * 0.66) }}>{ch}</div>
   return (
     <div className="guide">
-      <svg viewBox="0 0 109 109" className="strokes">
+      {/* a margin round the glyph, so strokes near the edge, the dakuten above all, aren't written at the cell's border */}
+      <svg viewBox="-10 -10 129 129" className="strokes">
         {strokes.p.map((d, i) => <path key={i} d={d} />)}
         {/* KanjiVG's own label spots: the dakuten pair is staggered on purpose and pokes slightly above the cell */}
         {strokes.n.map(([x, y], i) => <text key={i} x={x} y={y}>{i + 1}</text>)}

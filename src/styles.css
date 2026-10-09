@@ -321,9 +321,9 @@ button.stats:hover { border-color: var(--fg); }
    dakuten numbers, 6px each side, 30px below for the per-cell clear buttons. */
 .cells {
   position: relative; display: flex; flex-wrap: wrap; justify-content: center;
-  gap: 38px 8px; padding: 10px 6px 30px; margin: -10px 0 -18px;
+  gap: 38px 8px; padding: 10px 6px 30px; margin: -10px 0 0;
 }
-.cells.done { padding-bottom: 0; row-gap: 8px; margin-bottom: 0; }
+.cells.done { padding-bottom: 0; row-gap: 8px; }
 
 .cell {
   position: relative; flex: none;
@@ -353,6 +353,12 @@ button.stats:hover { border-color: var(--fg); }
 .ink-layer {
   position: absolute; inset: 0; z-index: 2; touch-action: none;
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Ccircle cx='5' cy='5' r='3' fill='%23ff5248' stroke='white' stroke-width='1.2'/%3E%3C/svg%3E") 5 5, crosshair;
+}
+/* A finger has no cursor to keep steady: the cells take the strokes themselves, and a swipe in the
+   gaps between them scrolls the page. */
+@media (pointer: coarse) {
+  .ink-layer { pointer-events: none; }
+  .cell { touch-action: none; }
 }
 
 /* Per-cell clear: below the cell, never over it, since the top-right corner is where dakuten go. */
