@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "oxlint",
-    "names": "python3 scripts/build-names.py"
+    "names": "python3 scripts/build-names.py",
+    "strokes": "python3 scripts/build-strokes.py"
   },
   "dependencies": {
     "react": "^19.2.8",

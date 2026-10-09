@@ -1,8 +1,8 @@
 // The writing band: one canvas per kana over a tracing guide, and a single ink layer on top that
 // takes every pointer event and routes each stroke to the cell it starts in.
-import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type PointerEvent, type Ref } from 'react'
+import { useImperativeHandle, useLayoutEffect, useRef, useState, type PointerEvent, type Ref } from 'react'
 import { useApp } from '../AppContext'
-import { cachedStrokes, getStrokes } from '../lib/strokes'
+import { STROKES } from '../data/strokes'
 import { UNDO_KEY } from '../lib/useHotkeys'
 import { Icon } from './ui'
 
@@ -116,10 +116,9 @@ export function WriteGrid({ chars, guide, nums, done, ref }: Props) {
   )
 }
 
-// KanjiVG strokes with their numbers; the plain glyph only if the data was slow or unavailable.
+// KanjiVG strokes with their numbers; the plain glyph for a character KanjiVG lacks.
 function StrokeGuide({ ch, size }: { ch: string; size: number }) {
-  const [strokes, setStrokes] = useState(() => cachedStrokes(ch))
-  useEffect(() => { if (!strokes) getStrokes(ch).then(s => { if (s) setStrokes(s) }) }, [ch, strokes])
+  const strokes = STROKES[ch]
 
   if (!strokes) return <div className="guide" style={{ fontSize: Math.round(size * 0.66) }}>{ch}</div>
   return (

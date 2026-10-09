@@ -13,7 +13,6 @@ export const KEYS = {
   speak: 'kanamon.autospeak',
   guide: 'kanamon.guide',
   nums: 'kanamon.strokenums',
-  strokes: 'kanamon.strokes.v1',
 } as const
 
 export function load<T>(key: string, fallback: T): T {
@@ -24,3 +23,6 @@ export function load<T>(key: string, fallback: T): T {
 export function save(key: string, value: unknown): void {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* private mode or full: keep going */ }
 }
+
+// Stroke order used to be fetched and cached here; it ships with the app now.
+try { localStorage.removeItem('kanamon.strokes.v1') } catch { /* nothing to free */ }

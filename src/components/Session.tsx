@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useApp, type SessionType } from '../AppContext'
 import { counts, drawSet, isNewBest, nameOf, pick } from '../lib/deck'
-import { isKana, toRomaji } from '../lib/romaji'
-import { preloadStrokes } from '../lib/strokes'
+import { toRomaji } from '../lib/romaji'
 import { UNDO_KEY, useHotkeys } from '../lib/useHotkeys'
 import { ReadCard } from './ReadCard'
 import { Summary } from './Summary'
@@ -29,9 +28,8 @@ export interface Run {
 interface State {
   run: Run
   phase: 'intro' | 'card' | 'summary'
-  /** the card up: `at` its index in the set, `seq` remounts it per question, `ready` once its stroke
-   *  guides are in (write mode) */
-  card: { id: number; at: number; seq: number; ready: boolean } | null
+  /** the card up: `at` its index in the set, `seq` remounts it per question */
+  card: { id: number; at: number; seq: number } | null
   /** the write card's answer is showing (changes what Enter does) */
   revealed: boolean
 }
@@ -58,7 +56,7 @@ export function Session({ onExit, queue }: { onExit: () => void; queue?: number[
   function ask(r: Run): State {
     if (r.type === 'practice' && r.results.length >= r.queue.length) return finish(r)
     const id = r.type === 'practice' ? r.queue[r.results.length] : pick(ids, progress, new Set(r.results.map(x => x.id)))
-    return { run: r, phase: 'card', card: { id, at: r.results.length, seq: ++seq, ready: mode === 'read' }, revealed: false }
+    return { run: r, phase: 'card', card: { id, at: r.results.length, seq: ++seq }, revealed: false }
   }
 
   // Scores the challenge once; a retry goes back to its parent's summary, already scored.
@@ -83,16 +81,6 @@ export function Session({ onExit, queue }: { onExit: () => void; queue?: number[
   const startChallenge = () => setS(ask({ ...run, endsAt: Date.now() + app.challengeMins * 60000 }))
 
   useHotkeys({ escape: onExit, enter: phase === 'intro' ? startChallenge : undefined })
-
-  // Load the stroke guides before showing a write card, so the glyph doesn't visibly swap shape.
-  useEffect(() => {
-    if (!card || card.ready) return
-    let live = true
-    preloadStrokes([...nameOf(card.id).ja].filter(isKana)).then(() => {
-      if (live) setS(st => (st.card?.seq === card.seq ? { ...st, card: { ...card, ready: true } } : st))
-    })
-    return () => { live = false }
-  }, [card])
 
   useEffect(() => { scrollTo(0, 0) }, [phase])
 
@@ -131,9 +119,7 @@ export function Session({ onExit, queue }: { onExit: () => void; queue?: number[
               <button className="btn primary" onClick={startChallenge}>{S.start}<Kbd dark>⏎</Kbd></button>
             </div>
           </>}
-          {phase === 'card' && card && (!card.ready
-            ? <div className="card-body center"><div className="kana-big muted">…</div></div>
-            : mode === 'read'
+          {phase === 'card' && card && (mode === 'read'
               ? <ReadCard key={card.seq} id={card.id} challenge={run.type === 'challenge'}
                   onAnswer={(correct, answer) => setS({ ...s, run: record(correct, answer), revealed: true })}
                   onNext={() => setS(ask(run))} />

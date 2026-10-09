@@ -30,23 +30,25 @@ Deploys as a static site anywhere; on Vercel the Vite preset needs no settings (
 | `src/components/History.tsx` | Learning history: names by Leitner box with pixel icons, its own generation filter and jump menu, pick some to review |
 | `src/components/ui.tsx` | Icons, key caps, segmented buttons, sprites, the generation list |
 | `src/lib/romaji.ts` | Katakana → romaji, the forgiving answer check, which syllables a wrong answer missed |
-| `src/lib/deck.ts` | Generation filter, Leitner-weighted picking |
+| `src/lib/deck.ts` | Generation filter, Leitner-weighted picking, the challenge best-score rule |
+| `src/lib/history.ts` | Learning history: which names a tab and search show, picking them |
 | `src/lib/icons.ts` | Pixel icon URLs for the learning history, and preloading them |
-| `src/lib/strokes.ts` | KanjiVG stroke-order guides, fetched and cached |
 | `src/lib/useHotkeys.ts` | Enter / Space / Esc / ⌘Z for whichever screen is up |
 | `src/data/names.ts` | All 1025 Japanese + English names (generated) |
+| `src/data/strokes.ts` | Stroke order for every katakana, from KanjiVG (generated) |
 | `src/styles.css` | All styles, light and dark, phone first with a two-column layout from 900px |
 
 ## Data
 
 - Names: [PokéAPI](https://pokeapi.co) data, regenerated with `npm run names`.
 - Sprites: loaded at runtime from PokéAPI's sprite repository; none are stored here.
-- Stroke order: [KanjiVG](https://kanjivg.tagaini.net), CC BY-SA 3.0, loaded at runtime.
+- Stroke order: [KanjiVG](https://kanjivg.tagaini.net), CC BY-SA 3.0, bundled in `src/data/strokes.ts`,
+  regenerated with `npm run strokes`.
 
-Both are fetched from a pinned commit (`SPRITES_SHA` in `src/lib/icons.ts`, `KANJIVG_SHA` in
-`src/lib/strokes.ts`), so a change upstream can't swap what the app shows. To take newer files, bump
-the hash. The production build adds a Content-Security-Policy (`vite.config.ts`) that allows images and
-fetches from those two hosts only.
+Both come from a pinned commit (`SPRITES_SHA` in `src/lib/icons.ts`, `KANJIVG_SHA` in
+`scripts/build-strokes.py`), so a change upstream can't swap what the app shows. To take newer files,
+bump the hash. The production build adds a Content-Security-Policy (`vite.config.ts`) that allows
+images from the two sprite hosts only and no outside fetches.
 
 Pokémon names and artwork are trademarks of Nintendo, Creatures Inc. and GAME FREAK inc.; this
 is an unofficial, non-commercial learning project.
