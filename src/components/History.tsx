@@ -3,16 +3,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useApp } from '../AppContext'
 import { buildDeck, GENS, learnedShare, nameOf, shuffle } from '../lib/deck'
+import { allPicked as everyPicked, filterNames, levelOf, pickAll as pickAllOf, togglePick, type Tab } from '../lib/history'
 import { toRomaji } from '../lib/romaji'
 import { useHotkeys } from '../lib/useHotkeys'
 import { DexIcon, GenList, Icon, Kbd, Seg } from './ui'
 
-type Tab = 'all' | 'weak' | 'learning' | 'learned'
-type Level = Exclude<Tab, 'all'> | 'unseen'
 const TABS: Tab[] = ['all', 'weak', 'learning', 'learned']
 
-// Box 1 is only reached by a wrong answer (a first right answer goes straight to 2): "missed last time".
-const levelOf = (box?: number): Level => (!box ? 'unseen' : box === 1 ? 'weak' : box < 4 ? 'learning' : 'learned')
 
 /** The page as it was left for a review, to come back to it. */
 export type HistoryState = { gens: number[]; tab: Tab; query: string; picked: Set<number>; y: number }
@@ -43,13 +40,7 @@ export function History({ saved, onBack, onReview }:
     return t
   }, [ids, progress])
 
-  const q = query.trim().toLowerCase()
-  const shown = ids.filter((id) => {
-    if (tab !== 'all' && levelOf(progress[id]) !== tab) return false
-    if (!q) return true
-    const { ja, en } = nameOf(id)
-    return ja.includes(q) || toRomaji(ja).includes(q) || en.toLowerCase().includes(q)
-  })
+  const shown = filterNames(ids, progress, tab, query)
 
   const sections = gens.map((g) => {
     const [from, to] = GENS[g - 1]
@@ -62,31 +53,14 @@ export function History({ saved, onBack, onReview }:
   const queue = picked.size ? [...picked] : shown
   const review = () => { if (queue.length) onReview(shuffle(queue), { gens, tab, query, picked, y: scrollY }) }
   // a second press undoes it, for the names on screen
-  const allPicked = shown.length > 0 && shown.every(id => picked.has(id))
-  const pickAll = () => setPicked((p) => {
-    const next = new Set(p)
-    for (const id of shown) {
-      if (allPicked) next.delete(id)
-      else next.add(id)
-    }
-    return next
-  })
+  const allPicked = everyPicked(picked, shown)
+  const pickAll = () => setPicked(p => pickAllOf(p, shown))
   // Shift-click sets every name on screen from the last clicked one to this one as the last one is.
   const anchor = useRef(0)
   const toggle = (id: number, shift: boolean) => {
-    const from = shown.indexOf(anchor.current), to = shown.indexOf(id)
+    const from = anchor.current
     anchor.current = id
-    setPicked((p) => {
-      const next = new Set(p)
-      if (shift && from >= 0) {
-        const on = p.has(shown[from])
-        for (const x of shown.slice(Math.min(from, to), Math.max(from, to) + 1)) {
-          if (on) next.add(x)
-          else next.delete(x)
-        }
-      } else if (!next.delete(id)) next.add(id)
-      return next
-    })
+    setPicked(p => togglePick(p, shown, id, from, shift))
   }
 
   // keep at least one generation, as on the home screen

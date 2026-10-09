@@ -24,6 +24,15 @@ const HOSTS = [
   (hex: string) => `https://raw.githubusercontent.com/KanjiVG/kanjivg/${KANJIVG_SHA}/kanji/${hex}.svg`,
 ]
 
+/** Strokes in order and their number spots from a KanjiVG file; null if it has no stroke paths. */
+export function parseKanjiVG(svg: string): Strokes | null {
+  const p = [...svg.matchAll(/<path[^>]*?id="kvg:[^"]*-s(\d+)"[^>]*?\sd="([^"]+)"/g)]
+    .sort((a, b) => +a[1] - +b[1]).map(m => m[2])
+  const n = [...svg.matchAll(/matrix\(1 0 0 1 ([\d.]+) ([\d.]+)\)">(\d+)</g)]
+    .sort((a, b) => +a[3] - +b[3]).map(m => [+m[1], +m[2]] as [number, number])
+  return p.length ? { p, n } : null
+}
+
 export const cachedStrokes = (ch: string): Strokes | undefined => cache[ch]
 
 export function getStrokes(ch: string): Promise<Strokes | null> {
@@ -34,15 +43,11 @@ export function getStrokes(ch: string): Promise<Strokes | null> {
       try {
         const res = await fetch(host(hex), { signal: AbortSignal.timeout(10000) })
         if (!res.ok) continue
-        const svg = await res.text()
-        const p = [...svg.matchAll(/<path[^>]*?id="kvg:[^"]*-s(\d+)"[^>]*?\sd="([^"]+)"/g)]
-          .sort((a, b) => +a[1] - +b[1]).map(m => m[2])
-        const n = [...svg.matchAll(/matrix\(1 0 0 1 ([\d.]+) ([\d.]+)\)">(\d+)</g)]
-          .sort((a, b) => +a[3] - +b[3]).map(m => [+m[1], +m[2]] as [number, number])
-        if (!p.length) return null
-        cache[ch] = { p, n }
+        const strokes = parseKanjiVG(await res.text())
+        if (!strokes) return null
+        cache[ch] = strokes
         save(KEYS.strokes, cache)
-        return cache[ch]
+        return strokes
       } catch { /* try the next host */ }
     }
     return null   // keep the plain glyph
