@@ -2,7 +2,7 @@
 // Challenge: one countdown over the whole run, counting how many you get right.
 import { useEffect, useState } from 'react'
 import { useApp, type SessionType } from '../AppContext'
-import { counts, drawSet, nameOf, pick } from '../lib/deck'
+import { counts, drawSet, isNewBest, nameOf, pick } from '../lib/deck'
 import { isKana, toRomaji } from '../lib/romaji'
 import { preloadStrokes } from '../lib/strokes'
 import { UNDO_KEY, useHotkeys } from '../lib/useHotkeys'
@@ -66,8 +66,7 @@ export function Session({ onExit, queue }: { onExit: () => void; queue?: number[
     if (r.parent) return { run: r.parent, phase: 'summary', card: null, revealed: false }
     if (r.type === 'challenge') {
       const correct = r.results.filter(x => x.correct).length
-      const prev = app.best[bestKey]
-      const newBest = correct > 0 && (prev == null || correct > prev)
+      const newBest = isNewBest(correct, app.best[bestKey])
       if (newBest) app.setBest(bestKey, correct)
       r = { ...r, newBest }
     }

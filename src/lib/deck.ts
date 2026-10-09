@@ -65,4 +65,7 @@ export function learnedShare(progress: Progress, gen: number): number {
   return Math.round(100 * learned / (to - from + 1))
 }
 
+/** A challenge score is a new best when it beats the old one; zero right never counts. */
+export const isNewBest = (correct: number, prev: number | undefined) => correct > 0 && (prev == null || correct > prev)
+
 export const nextBox = (box: number | undefined, correct: boolean) => (correct ? Math.min((box || 1) + 1, 5) : 1)
