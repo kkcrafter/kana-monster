@@ -2,24 +2,24 @@ import { describe, expect, it } from 'vitest'
 import { diffAnswer, kanaUnits, matches, toRomaji } from './romaji'
 
 const ACCEPT: string[][] = [
-  ['ピカチュウ', 'pikachu', 'pikachuu', 'PIKACHU'],
+  ['ピカチュウ', 'pikachuu', 'PIKACHUU', 'pikachū', 'pikachû', 'pikachu-'],
   ['フシギダネ', 'fushigidane', 'husigidane'],
-  ['リザードン', 'rizadon', 'rizaadon', 'rizaadonn'],
+  ['リザードン', 'rizaadon', 'rizādon', 'riza-don', 'rizaadonn'],
   ['コダック', 'kodakku'],
-  ['ミュウツー', 'myutsu', 'myuutsuu'],
-  ['ニャース', 'nyasu', 'nyaasu'],
-  ['カイリュー', 'kairyu', 'kairyuu'],
+  ['ミュウツー', 'myuutsuu', 'myūtsū', 'myuutsu-'],
+  ['ニャース', 'nyaasu', 'nyāsu', 'nya-su'],
+  ['カイリュー', 'kairyuu', 'kairyū'],
   ['ポッポ', 'poppo'],
   ['ゼニガメ', 'zenigame'],
-  ['ファイヤー', 'faiya', 'faiyaa', 'fai-yaa'],
+  ['ファイヤー', 'faiyaa', 'faiyā', 'faiya-', 'fai-yaa'],
   ['ジュペッタ', 'jupetta', 'jyupetta'],
-  ['イーブイ', 'ibui', 'iibui', 'i-bui'],
-  ['シャワーズ', 'shawazu', 'syawaazu'],
-  ['セレビィ', 'serebii', 'serebi'],
-  ['ピィ', 'pii', 'pi'],
-  ['ケーシィ', 'keeshii', 'keshi'],
-  ['スナバァ', 'sunabaa', 'sunaba'],
-  ['メェークル', 'meekuru', 'mekuru'],
+  ['イーブイ', 'iibui', 'ībui', 'i-bui'],
+  ['シャワーズ', 'shawaazu', 'syawaazu', 'shawāzu'],
+  ['セレビィ', 'serebii'],
+  ['ピィ', 'pii'],
+  ['ケーシィ', 'keeshii', 'kēshii'],
+  ['スナバァ', 'sunabaa'],
+  ['メェークル', 'meekuru'],
   ['カプ・コケコ', 'kapu kokeko', 'kapukokeko', 'kapu-kokeko'],
   ['ポリゴン２', 'porigon2', 'porigon'],
   ['タイプ：ヌル', 'taipu:nuru', 'taipunuru'],
@@ -28,11 +28,21 @@ const ACCEPT: string[][] = [
 ];
 
 const REJECT: string[][] = [
-  ['ポッポ', 'popo'],           // 促音 must survive vowel collapsing
+  ['ポッポ', 'popo'],           // 促音 must be read
   ['コダック', 'kodaku'],
-  ['ファイヤー', 'fuaiyaa'],
-  ['ピカチュウ', 'pikachi', 'pikachou'],
-  ['ニャース', 'nasu'],
+  ['ファイヤー', 'fuaiyaa', 'faiya'],
+  ['ピカチュウ', 'pikachi', 'pikachou', 'pikachu'],   // the last ウ is a kana of its own
+  ['ニャース', 'nasu', 'nyasu'],
+  ['リザードン', 'rizadon'],     // ー lengthens ザ: zaa
+  ['ミュウツー', 'myutsu', 'myuutsu', 'myutsuu'],
+  ['カイリュー', 'kairyu'],
+  ['イーブイ', 'ibui'],
+  ['シャワーズ', 'shawazu'],
+  ['セレビィ', 'serebi'],
+  ['ピィ', 'pi'],
+  ['ケーシィ', 'keshi', 'keeshi'],
+  ['スナバァ', 'sunaba'],
+  ['メェークル', 'mekuru'],
 ];
 
 describe('matches', () => {
@@ -69,5 +79,9 @@ describe('diffAnswer', () => {
     ['リザードン', 'rizaadon', ''],
     ['ゼニガメ', 'zenigamexx', 'メ:mexx'],
     ['カプ・コケコ', 'kapukokoko', 'ケ:ko'],
+    ['リザードン', 'rizadon', 'ザー:za'],
+    ['ピカチュウ', 'pikachu', 'ウ:'],
+    ['ミュウツー', 'myutsu', 'ウ: ツー:tsu'],
+    ['リザードン', 'rizādon', ''],
   ])('%s typed "%s" misses "%s"', (ja, a, want) => expect(wrong(ja, a)).toBe(want))
 })
