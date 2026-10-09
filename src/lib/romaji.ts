@@ -1,4 +1,4 @@
-// Katakana → romaji, the forgiving answer check, and where a wrong answer went wrong.
+// Katakana → romaji, the answer check, and where a wrong answer went wrong.
 
 const DIGRAPH: Record<string, string> = {
   'キャ':'kya','キュ':'kyu','キョ':'kyo','シャ':'sha','シュ':'shu','ショ':'sho',
@@ -85,7 +85,7 @@ export function toRomaji(kana: string): string {
 export function diffAnswer(kana: string, answer: string): DiffUnit[] {
   const units = kanaUnits(kana).filter(u => u.romaji.trim());
   const want = units.map(u => u.romaji.toLowerCase().replace(/[^a-z]/g, ''));
-  const target = want.join(''), typed = answer.toLowerCase().replace(/[^a-z]/g, '');
+  const target = want.join(''), typed = unmacron(answer).replace(/[^a-z]/g, '');
   const owner = want.flatMap((w, i) => [...w].map(() => i));   // unit index of each target letter
   const n = target.length, m = typed.length;
   const d = Array.from({ length: n + 1 }, (_, i) => Array.from({ length: m + 1 }, (_, j) => i + j));
@@ -95,12 +95,14 @@ export function diffAnswer(kana: string, answer: string): DiffUnit[] {
   const got = units.map(() => ''), ok = want.map(() => true);
   let i = n, j = m;
   const charge = (u: number, letter: string) => { got[u] = letter + got[u]; };
+  // Walking back from the end, a missing letter is charged before a match on a tie, so it lands on the
+  // later unit: pikachu misses ウ, not the チュ it typed in full.
   while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && d[i][j] === d[i - 1][j - 1] + (target[i - 1] === typed[j - 1] ? 0 : 1)) {
+    if (i > 0 && d[i][j] === d[i - 1][j] + 1) {                   // expected letter missing
+      ok[owner[i - 1]] = false; i--;
+    } else if (i > 0 && j > 0 && d[i][j] === d[i - 1][j - 1] + (target[i - 1] === typed[j - 1] ? 0 : 1)) {
       if (target[i - 1] !== typed[j - 1]) ok[owner[i - 1]] = false;
       charge(owner[i - 1], typed[j - 1]); i--; j--;
-    } else if (i > 0 && d[i][j] === d[i - 1][j] + 1) {          // expected letter missing
-      ok[owner[i - 1]] = false; i--;
     } else {                                                     // extra letter typed
       const u = i > 0 ? owner[i - 1] : 0;
       ok[u] = false; charge(u, typed[j - 1]); j--;
@@ -109,20 +111,28 @@ export function diffAnswer(kana: string, answer: string): DiffUnit[] {
   return units.map((u, k) => ({ ...u, typed: got[k], ok: want[k] === '' || ok[k] }));
 }
 
-// Forgiving comparison: accept kunrei/wapuro spellings and any long-vowel writing.
+// A long vowel marked with a macron (Hepburn: ū) or a circumflex (Kunrei-shiki: û), as the doubled
+// vowel the reading shows.
+const MACRON: Record<string, string> = { ā: 'aa', ī: 'ii', ū: 'uu', ē: 'ee', ō: 'oo', â: 'aa', î: 'ii', û: 'uu', ê: 'ee', ô: 'oo' };
+const unmacron = (s: string) => s.toLowerCase().replace(/[āīūēōâîûêô]/g, c => MACRON[c]);
+
+// Forgiving about the spelling system (kunrei/wapuro: si, tu, hu…), never about a kana left out.
 export function norm(s: string): string {
-  return s.toLowerCase().replace(/[^a-z]/g, '')
+  return unmacron(s).replace(/[^a-z]/g, '')
     .replace(/tch/g, 'cch')
     .replace(/sy/g, 'sh').replace(/ty/g, 'ch').replace(/cy/g, 'ch').replace(/jy/g, 'j')
     .replace(/si/g, 'shi').replace(/ti/g, 'chi').replace(/tu/g, 'tsu')
     .replace(/(?<![sc])hu/g, 'fu')
     .replace(/zi/g, 'ji').replace(/di/g, 'ji').replace(/du/g, 'zu')
-    .replace(/nn/g, 'n')
-    .replace(/([aiueo])\1+/g, '$1')
-    .replace(/ou/g, 'o');
+    .replace(/nn/g, 'n');
 }
 
-export const matches = (input: string, kana: string): boolean => norm(input) === norm(toRomaji(kana));
+// Every kana has to be read, long vowels too: ピカチュウ is pikachuu (or pikachū), not pikachu.
+// A hyphen may be the IME's long-vowel mark (i-bui) or just a separator (kapu-kokeko): both are tried.
+export function matches(input: string, kana: string): boolean {
+  const want = norm(toRomaji(kana)), s = unmacron(input);
+  return [s, s.replace(/([aiueo])-/g, '$1$1')].some(v => norm(v) === want);
+}
 
 
 // A writable katakana: excludes ・ and symbols like the ♀ in ニドラン♀; keeps ー.
