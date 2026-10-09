@@ -32,11 +32,14 @@ export function WriteGrid({ chars, guide, nums, done, ref }: Props) {
   const [inked, setInked] = useState(() => chars.map(() => false))
   const [hover, setHover] = useState(-1)
 
-  // Fit one name on one row where possible; never below a finger-sized 48px.
+  // Web: fit one name on one row where possible, never below 48px. Phone: a fingertip hides a 50px
+  // cell, so wrap into rows of at most 3 and go as big as that allows.
   useLayoutEffect(() => {
-    const room = band.current!.parentElement!.clientWidth - 12 - (chars.length - 1) * 8   // the band's side padding, gaps
-    const most = matchMedia('(min-width: 900px)').matches ? 96 : 76   // the web layout has room for bigger cells
-    setSize(Math.max(48, Math.min(most, Math.floor(room / chars.length))))
+    const wide = matchMedia('(min-width: 900px)').matches
+    const rows = wide ? 1 : Math.ceil(chars.length / 3)
+    const perRow = Math.ceil(chars.length / rows)
+    const room = band.current!.parentElement!.clientWidth - 12 - (perRow - 1) * 8   // the band's side padding, gaps
+    setSize(Math.max(48, Math.min(wide ? 96 : 120, Math.floor(room / perRow))))
   }, [chars.length])
 
   // Sized here rather than in JSX: setting a canvas's width wipes its drawing state.
