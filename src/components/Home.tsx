@@ -29,7 +29,10 @@ export function Home({ onStart, onHistory }: { onStart: () => void; onHistory: (
       </header>
       <main className="home">
         <section className="home-main">
-          <h1 className="home-title wide-only">{S.homeTitle}</h1>
+          <div className="home-head">
+            <h1 className="home-title wide-only">{S.homeTitle}</h1>
+            <p className="home-tagline">{S.tagline}</p>
+          </div>
           <section className="group mode-group">
             <h2 className="label">{S.modeLabel}</h2>
             <div className="modes">

@@ -84,6 +84,8 @@ h1, h2, h3, p { margin: 0; }
 /* On a phone the two columns dissolve into one ordered stack with the start button pinned below. */
 .home { display: flex; flex-direction: column; gap: 18px; padding: 8px 20px 0; flex: 1; }
 .home-main, .home-side { display: contents; }
+.home-head { display: flex; flex-direction: column; gap: 6px; }   /* first in the phone stack too */
+.home-tagline { font-size: 14px; color: var(--muted); }
 .stats { order: 1; }
 .mode-group { order: 2; }
 .method-group { order: 3; }
@@ -403,6 +405,7 @@ dialog.settings::backdrop { background: rgb(20 20 19 / .45); }
   .home-main { display: flex; flex-direction: column; gap: 24px; flex: 999 1 560px; min-width: 0; }
   .home-side { display: flex; flex-direction: column; gap: 16px; flex: 1 1 320px; min-width: 0; }
   .home-title { font-size: 32px; letter-spacing: .01em; }
+  .home-tagline { font-size: 16px; }
   .home-main .label { display: none; }   /* the web layout's heading says it already */
   .modes { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
   .mode-card { padding: 20px; gap: 6px; }
